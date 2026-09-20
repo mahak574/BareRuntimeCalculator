@@ -1696,5 +1696,41 @@ function generateRenderData(layout) {
     }
   });
 
+  // --- MANUAL OVERRIDES FOR VISUAL CONNECTIONS ---
+  const addManualConnection = (fromStn, fromLine, toStn, toLine) => {
+    const leA = lineEnds[`${fromStn}-SEQ-${fromLine}`] || lineEnds[`${fromStn}-LINE-${fromLine}`];
+    const leB = lineEnds[`${toStn}-SEQ-${toLine}`] || lineEnds[`${toStn}-LINE-${toLine}`];
+
+    if (leA && leB) {
+      let startX, startY = leA.y;
+      let endX, endY = leB.y;
+
+      if (leB.leftX > leA.rightX) {
+        startX = leA.rightX; endX = leB.leftX;
+      } else {
+        startX = leA.leftX; endX = leB.rightX;
+      }
+
+      const midX = (startX + endX) / 2;
+      const midY = (startY + endY) / 2;
+      const path = `M ${startX} ${startY} L ${midX} ${midY} L ${endX} ${endY}`;
+
+      data.connections.push({
+        rawConn: {}, 
+        path,
+        startX, startY, endX, endY,
+        color: '#ea580c',
+        isLeftToRight: startX < endX,
+        isBidirectional: false,
+        isMainLineConnection: false,
+        isRedundantMainLine: false,
+        label: `${leA.label} → ${leB.label}`
+      });
+    }
+  };
+
+  addManualConnection('SGAC', 3, 'CDSL', 2);
+  addManualConnection('CDSL', 2, 'DXD', 3);
+
   return data;
 }

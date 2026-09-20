@@ -101,11 +101,8 @@ export async function runSimulation({
     }
     return parseFloat(val) || 0;
   };
-  const DEFAULT_ACCELERATION_TIME = 5;
-  const DEFAULT_DECELERATION_TIME = 3;
-
-  const accelPenaltyMins = (!simAccelTime) ? DEFAULT_ACCELERATION_TIME : Math.max(0, parseTimeInput(simAccelTime));
-  const decelPenaltyMins = (!simDecelTime) ? DEFAULT_DECELERATION_TIME : Math.max(0, parseTimeInput(simDecelTime));
+  const accelPenaltyMins = simAccelTime ? Math.max(0, parseTimeInput(simAccelTime)) : 0;
+  const decelPenaltyMins = simDecelTime ? Math.max(0, parseTimeInput(simDecelTime)) : 0;
   const STATION_SAFETY_MARGIN = 5;
 
   const simStopsMap = new Map(simStops.map(s => [s.code, s.halt]));
@@ -224,11 +221,11 @@ export async function runSimulation({
         break;
       }
     }
-    return { 
-      stn1Code, 
-      stn2Code, 
-      isDoubleLine, 
-      matchedCandidates, 
+    return {
+      stn1Code,
+      stn2Code,
+      isDoubleLine,
+      matchedCandidates,
       stn2Candidates,
       signalling
     };
@@ -247,7 +244,7 @@ export async function runSimulation({
     const automaticSeparationMins = hwMargin;
 
     const currentDayIdx = Math.floor(depMins / 1440);
-    
+
     // Check matched candidates (existing trains)
     for (const cand of blockInfo.matchedCandidates) {
       let dayOffset = 0;
@@ -259,19 +256,19 @@ export async function runSimulation({
       }
       const segDep = cand.segDepBase + dayOffset;
       const segArr = cand.segArrBase + dayOffset;
-      
+
       if (cand.isSameDir) {
         // Normal scheduler headway check
         if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
         if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
         if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) headwayViolation = true;
-        
+
         // Automatic signalling separation check
         if (Math.abs(segDep - depMins) < automaticSeparationMins) automaticSeparationViolation = true;
         if (Math.abs(segArr - arrMins) < automaticSeparationMins) automaticSeparationViolation = true;
         if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) automaticSeparationViolation = true;
       }
-      
+
       // Physical occupancy overlap (Time-window overlap)
       if ((segDep - hwMargin) < arrMins && (segArr + hwMargin) > depMins) {
         if (cand.isSameDir) {
@@ -285,7 +282,7 @@ export async function runSimulation({
         }
       }
     }
-    
+
     // Check extra scheduled trains
     if (extraScheduled && extraScheduled.length > 0) {
       for (const train of extraScheduled) {
@@ -297,10 +294,10 @@ export async function runSimulation({
           const opp = pStp.station === blockInfo.stn2Code && cStp.station === blockInfo.stn1Code;
           if (!same && !opp) continue;
           if (blockInfo.isDoubleLine && opp) continue;
-          
+
           const segDep = pStp.absDepMins !== undefined ? pStp.absDepMins : (pStp.depTime * 60);
           const segArr = cStp.absArrMins !== undefined ? cStp.absArrMins : (cStp.arrTime * 60);
-          
+
           if (same) {
             if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
             if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
@@ -310,7 +307,7 @@ export async function runSimulation({
             if (Math.abs(segArr - arrMins) < automaticSeparationMins) automaticSeparationViolation = true;
             if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) automaticSeparationViolation = true;
           }
-          
+
           if ((segDep - hwMargin) < arrMins && (segArr + hwMargin) > depMins) {
             if (same) {
               sameDirOverlaps++;
@@ -326,181 +323,181 @@ export async function runSimulation({
         }
       }
     }
-    
+
     return { sameDirOverlaps, oppDirOverlaps, headwayViolation, automaticSeparationViolation, confTrainId, confTrainDir };
   };
 
   const stationLineDirs = buildStationLineDirections(layout);
 
-  const globalStationAllocations = {}; 
+  const globalStationAllocations = {};
 
   const initAllocations = (stnCode) => {
-     if (!globalStationAllocations[stnCode]) {
-        globalStationAllocations[stnCode] = [];
-     }
-     return globalStationAllocations[stnCode];
+    if (!globalStationAllocations[stnCode]) {
+      globalStationAllocations[stnCode] = [];
+    }
+    return globalStationAllocations[stnCode];
   };
 
   const getAbsoluteIntervals = (alloc, maxDays = 7) => {
-      if (!alloc.daysBits) return [{ start: alloc.tStart, end: alloc.tEnd }];
-      const intervals = [];
-      for (let day = 0; day < maxDays; day++) {
-          if (alloc.daysBits[day % 7] === '1') {
-              intervals.push({
-                  start: alloc.tStart + day * 1440,
-                  end: alloc.tEnd + day * 1440
-              });
-          }
+    if (!alloc.daysBits) return [{ start: alloc.tStart, end: alloc.tEnd }];
+    const intervals = [];
+    for (let day = 0; day < maxDays; day++) {
+      if (alloc.daysBits[day % 7] === '1') {
+        intervals.push({
+          start: alloc.tStart + day * 1440,
+          end: alloc.tEnd + day * 1440
+        });
       }
-      return intervals;
+    }
+    return intervals;
   };
 
   const checkIntervalOverlap = (reqStart, reqEnd, alloc, safetyMargin = 5) => {
-      const intervals = getAbsoluteIntervals(alloc);
-      for (const int of intervals) {
-          if (int.start < reqEnd && reqStart < (int.end + safetyMargin)) {
-              return true;
-          }
+    const intervals = getAbsoluteIntervals(alloc);
+    for (const int of intervals) {
+      if (int.start < reqEnd && reqStart < (int.end + safetyMargin)) {
+        return true;
       }
-      return false;
+    }
+    return false;
   };
 
   const allocateStationLine = (stnCode, tId, tDir, tStart, tEnd, daysBits, isCanonical) => {
-      const stnLines = stationLineDirs[stnCode];
-      if (!stnLines) return null; 
+    const stnLines = stationLineDirs[stnCode];
+    if (!stnLines) return null;
 
-      const lines = Object.keys(stnLines).map(lineId => ({ lineId, direction: stnLines[lineId] }));
-      const compatibleLines = lines
-        .filter(l => l.direction === tDir || l.direction === 'BOTH')
-        .sort((a, b) => {
-           const aBoth = a.direction === 'BOTH' ? 1 : 0;
-           const bBoth = b.direction === 'BOTH' ? 1 : 0;
-           return aBoth - bBoth; // exact direction first
-        });
+    const lines = Object.keys(stnLines).map(lineId => ({ lineId, direction: stnLines[lineId] }));
+    const compatibleLines = lines
+      .filter(l => l.direction === tDir || l.direction === 'BOTH')
+      .sort((a, b) => {
+        const aBoth = a.direction === 'BOTH' ? 1 : 0;
+        const bBoth = b.direction === 'BOTH' ? 1 : 0;
+        return aBoth - bBoth; // exact direction first
+      });
 
-      const allocations = initAllocations(stnCode);
+    const allocations = initAllocations(stnCode);
 
-      let assignedLineId = null;
-      for (const l of compatibleLines) {
-         let conflict = false;
-         for (const a of allocations) {
-             if (a.lineId !== l.lineId) continue;
-             
-             const reqIntervals = getAbsoluteIntervals({ tStart, tEnd, daysBits });
-             for (const cInt of reqIntervals) {
-                 if (checkIntervalOverlap(cInt.start, cInt.end, a, STATION_SAFETY_MARGIN)) {
-                     conflict = true;
-                     break;
-                 }
-             }
-             if (conflict) break;
-         }
-         
-         if (!conflict) {
-             assignedLineId = l.lineId;
-             break;
-         }
+    let assignedLineId = null;
+    for (const l of compatibleLines) {
+      let conflict = false;
+      for (const a of allocations) {
+        if (a.lineId !== l.lineId) continue;
+
+        const reqIntervals = getAbsoluteIntervals({ tStart, tEnd, daysBits });
+        for (const cInt of reqIntervals) {
+          if (checkIntervalOverlap(cInt.start, cInt.end, a, STATION_SAFETY_MARGIN)) {
+            conflict = true;
+            break;
+          }
+        }
+        if (conflict) break;
       }
 
-      if (assignedLineId) {
-          allocations.push({ lineId: assignedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: false });
-          return assignedLineId;
-      } else {
-          console.debug('[STATION CAPACITY VIOLATION]', {
-              station: stnCode, trainId: tId, direction: tDir, 
-              requested: `${tStart}-${tEnd}`, 
-              lines: compatibleLines.length, 
-              isCanonical
-          });
-          const forcedLineId = compatibleLines.length > 0 ? compatibleLines[0].lineId : 'UNKNOWN';
-          allocations.push({ lineId: forcedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: true });
-          return forcedLineId;
+      if (!conflict) {
+        assignedLineId = l.lineId;
+        break;
       }
+    }
+
+    if (assignedLineId) {
+      allocations.push({ lineId: assignedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: false });
+      return assignedLineId;
+    } else {
+      console.debug('[STATION CAPACITY VIOLATION]', {
+        station: stnCode, trainId: tId, direction: tDir,
+        requested: `${tStart}-${tEnd}`,
+        lines: compatibleLines.length,
+        isCanonical
+      });
+      const forcedLineId = compatibleLines.length > 0 ? compatibleLines[0].lineId : 'UNKNOWN';
+      allocations.push({ lineId: forcedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: true });
+      return forcedLineId;
+    }
   };
 
   // Pre-allocate Canonical Trains
   canonicalTrains.forEach(train => {
-      if (!train.stops) return;
-      const tId = train.trainNo;
-      const tDir = train.isForward ? 'DOWN' : 'UP';
-      const daysBits = train.daysOfSrvc ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null;
-      for (const stop of train.stops) {
-          const arr = stop.absArrMins !== undefined ? stop.absArrMins : (stop.arrTime * 60);
-          const dep = stop.absDepMins !== undefined ? stop.absDepMins : (stop.depTime * 60);
-          allocateStationLine(stop.station, tId, tDir, arr, dep, daysBits, true);
-      }
+    if (!train.stops) return;
+    const tId = train.trainNo;
+    const tDir = train.isForward ? 'DOWN' : 'UP';
+    const daysBits = train.daysOfSrvc ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null;
+    for (const stop of train.stops) {
+      const arr = stop.absArrMins !== undefined ? stop.absArrMins : (stop.arrTime * 60);
+      const dep = stop.absDepMins !== undefined ? stop.absDepMins : (stop.depTime * 60);
+      allocateStationLine(stop.station, tId, tDir, arr, dep, daysBits, true);
+    }
   });
 
   // Pre-allocate Accepted Simulated Paths (from previous runs/reloads)
   simulatedPaths.forEach(train => {
-      if (!train.stops) return;
-      const tId = train.trainNo;
-      const tDir = train.isForward ? 'DOWN' : 'UP';
-      for (const stop of train.stops) {
-          if (stop.stationLineId) {
-              const arr = stop.absArrMins !== undefined ? stop.absArrMins : (stop.arrTime * 60);
-              const dep = stop.absDepMins !== undefined ? stop.absDepMins : (stop.depTime * 60);
-              const allocations = initAllocations(stop.station);
-              allocations.push({ lineId: stop.stationLineId, tId, tDir, tStart: arr, tEnd: dep, daysBits: null, overflow: false });
-          }
+    if (!train.stops) return;
+    const tId = train.trainNo;
+    const tDir = train.isForward ? 'DOWN' : 'UP';
+    for (const stop of train.stops) {
+      if (stop.stationLineId) {
+        const arr = stop.absArrMins !== undefined ? stop.absArrMins : (stop.arrTime * 60);
+        const dep = stop.absDepMins !== undefined ? stop.absDepMins : (stop.depTime * 60);
+        const allocations = initAllocations(stop.station);
+        allocations.push({ lineId: stop.stationLineId, tId, tDir, tStart: arr, tEnd: dep, daysBits: null, overflow: false });
       }
+    }
   });
 
   const checkCandidateStationLine = (stnCode, reqStart, reqEnd, reqDir, reqTrainId, forceLineId = null) => {
-      diagnostics.stationConflictChecks++;
-      const stnLines = stationLineDirs[stnCode];
-      
-      if (!stnLines) return { conflict: false, assignedLineId: null };
+    diagnostics.stationConflictChecks++;
+    const stnLines = stationLineDirs[stnCode];
 
-      let compatibleLines = [];
-      if (forceLineId) {
-          compatibleLines = [{ lineId: forceLineId, direction: stnLines[forceLineId] }];
-      } else {
-          const lines = Object.keys(stnLines).map(lineId => ({ lineId, direction: stnLines[lineId] }));
-          compatibleLines = lines
-            .filter(l => l.direction === reqDir || l.direction === 'BOTH')
-            .sort((a, b) => {
-               const aBoth = a.direction === 'BOTH' ? 1 : 0;
-               const bBoth = b.direction === 'BOTH' ? 1 : 0;
-               return aBoth - bBoth;
-            });
+    if (!stnLines) return { conflict: false, assignedLineId: null };
+
+    let compatibleLines = [];
+    if (forceLineId) {
+      compatibleLines = [{ lineId: forceLineId, direction: stnLines[forceLineId] }];
+    } else {
+      const lines = Object.keys(stnLines).map(lineId => ({ lineId, direction: stnLines[lineId] }));
+      compatibleLines = lines
+        .filter(l => l.direction === reqDir || l.direction === 'BOTH')
+        .sort((a, b) => {
+          const aBoth = a.direction === 'BOTH' ? 1 : 0;
+          const bBoth = b.direction === 'BOTH' ? 1 : 0;
+          return aBoth - bBoth;
+        });
+    }
+
+    const allocations = globalStationAllocations[stnCode] || [];
+
+    let assignedLineId = null;
+    for (const l of compatibleLines) {
+      let conflict = false;
+      for (const a of allocations) {
+        if (a.lineId !== l.lineId) continue;
+
+        if (checkIntervalOverlap(reqStart, reqEnd, a, STATION_SAFETY_MARGIN)) {
+          conflict = true;
+          break;
+        }
       }
 
-      const allocations = globalStationAllocations[stnCode] || [];
-
-      let assignedLineId = null;
-      for (const l of compatibleLines) {
-         let conflict = false;
-         for (const a of allocations) {
-             if (a.lineId !== l.lineId) continue;
-             
-             if (checkIntervalOverlap(reqStart, reqEnd, a, STATION_SAFETY_MARGIN)) {
-                 conflict = true;
-                 break;
-             }
-         }
-         
-         if (!conflict) {
-             assignedLineId = l.lineId;
-             break;
-         }
+      if (!conflict) {
+        assignedLineId = l.lineId;
+        break;
       }
+    }
 
-      if (assignedLineId) {
-          return { conflict: false, assignedLineId };
-      } else {
-          console.log('[STATION CAPACITY FAILURE]', {
-              trainId: reqTrainId,
-              direction: reqDir,
-              station: stnCode,
-              requestedStart: reqStart,
-              requestedEnd: reqEnd,
-              compatibleLines: compatibleLines.map(l => l.lineId),
-              allocations: allocations.map(a => ({ lineId: a.lineId, trainId: a.tId, start: a.tStart, end: a.tEnd }))
-          });
-          diagnostics.stationCapacityFailures = (diagnostics.stationCapacityFailures || 0) + 1;
-          return { conflict: true, assignedLineId: null };
-      }
+    if (assignedLineId) {
+      return { conflict: false, assignedLineId };
+    } else {
+      console.log('[STATION CAPACITY FAILURE]', {
+        trainId: reqTrainId,
+        direction: reqDir,
+        station: stnCode,
+        requestedStart: reqStart,
+        requestedEnd: reqEnd,
+        compatibleLines: compatibleLines.map(l => l.lineId),
+        allocations: allocations.map(a => ({ lineId: a.lineId, trainId: a.tId, start: a.tStart, end: a.tEnd }))
+      });
+      diagnostics.stationCapacityFailures = (diagnostics.stationCapacityFailures || 0) + 1;
+      return { conflict: true, assignedLineId: null };
+    }
   };
 
   const attemptPathFromTime = async (stations, blockData, blockInfos, tryStartMins, extraScheduled, reqTrainId) => {
@@ -518,6 +515,7 @@ export async function runSimulation({
     let iter = 0;
     let originLineId = null;
     const visited = new Set();
+    const detainedStations = new Set();
     while (true) {
       iter++;
       diagnostics.totalIterations++;
@@ -545,141 +543,187 @@ export async function runSimulation({
         let finalArrTime = null;
         let blockConflictFound = false;
         let stationConflictFound = false;
-        
+
         // RE-CHECK THE ENTIRE HALT DURATION INCLUDING DETENTION
         let currentLineId = null;
         if (i === 0) {
-            const originRes = checkCandidateStationLine(block.stn1.code, arrivalAt[0], departAttempt[0], reqDir, reqTrainId);
-            if (originRes.conflict) {
-                stationConflictFound = true;
-            } else {
-                currentLineId = originRes.assignedLineId;
-                originLineId = currentLineId;
-            }
+          const originRes = checkCandidateStationLine(block.stn1.code, arrivalAt[0], departAttempt[0], reqDir, reqTrainId);
+          if (originRes.conflict) {
+            stationConflictFound = true;
+          } else {
+            currentLineId = originRes.assignedLineId;
+            originLineId = currentLineId;
+          }
         } else {
-            currentLineId = hopResult[i - 1].endLineId;
-            const waitRes = checkCandidateStationLine(block.stn1.code, arrivalAt[i], departAttempt[i], reqDir, reqTrainId, currentLineId);
-            if (waitRes.conflict) {
-                stationConflictFound = true;
-            }
+          currentLineId = hopResult[i - 1].endLineId;
+          const waitRes = checkCandidateStationLine(block.stn1.code, arrivalAt[i], departAttempt[i], reqDir, reqTrainId, currentLineId);
+          if (waitRes.conflict) {
+            stationConflictFound = true;
+          }
         }
 
         if (stationConflictFound) {
-            diagnostics.backtrackCount++;
-            for (let k = i; k < n; k++) departAttempt[k] = null;
-            if (i > 0) departAttempt[i - 1] += 1;
-            break;
+          diagnostics.backtrackCount++;
+          for (let k = i; k < n; k++) departAttempt[k] = null;
+          if (i > 0) departAttempt[i - 1] += 1;
+          break;
         }
 
         const depTime = departAttempt[i];
-        
+
         let stnSpeeds = speedLimit ? [speedLimit] : cachedGetStationSpeeds(block.stn1.code);
 
         if (simSpeed === 'goods') {
-           const dirKey = reqDir === 'DOWN' ? 'forward' : 'backward';
-           const secCode = block.blockCode;
-           const loadType = simTrainLoadType || 'LOADED';
-           const ovrKey = `${dirKey}_${secCode}_${loadType}`;
-           const override = goodsSpeedOverrides && goodsSpeedOverrides[ovrKey];
-           
-           let foundSpeed = null;
-           let defSpeed = null;
+          const dirKey = reqDir === 'DOWN' ? 'forward' : 'backward';
+          const secCode = block.blockCode;
+          const loadType = simTrainLoadType || 'LOADED';
+          const ovrKey = `${dirKey}_${secCode}_${loadType}`;
+          const override = goodsSpeedOverrides && goodsSpeedOverrides[ovrKey];
 
-           if (goodsSpeedConfig && goodsSpeedConfig[dirKey] && goodsSpeedConfig[dirKey][secCode] && goodsSpeedConfig[dirKey][secCode][loadType]) {
-              const stats = goodsSpeedConfig[dirKey][secCode][loadType];
-              if (stats.defaultSpeed > 0) {
-                  defSpeed = stats.defaultSpeed;
-              }
-           }
-           
-           if (override && !isNaN(parseFloat(override)) && parseFloat(override) > 0) {
-              foundSpeed = parseFloat(override);
-           } else if (defSpeed) {
-              foundSpeed = defSpeed;
-           }
-           
-           if (foundSpeed) {
-              stnSpeeds = [foundSpeed];
-              let calcTime = (block.dist / foundSpeed) * 60;
-              
-              if (goodsLogCount < 10) {
-                 console.log(`\n[GOODS EFFECTIVE SPEED]\n` + JSON.stringify({
-                   trainId: reqTrainId,
-                   direction: dirKey,
-                   loadType: loadType,
-                   blockSection: secCode,
-                   speedMode: 'goods',
-                   overrideSpeed: override ? parseFloat(override) : null,
-                   defaultGoodsSpeed: defSpeed,
-                   effectiveSpeed: foundSpeed
-                 }, null, 2));
+          let foundSpeed = null;
+          let defSpeed = null;
 
-                 console.log(`\n[GOODS TRAVEL TIME]\n` + JSON.stringify({
-                   blockSection: secCode,
-                   distanceKm: block.dist,
-                   effectiveSpeedKmH: foundSpeed,
-                   calculatedTravelTimeMinutes: calcTime
-                 }, null, 2));
-                 
-                 goodsLogCount++;
-              }
-           } else {
-              stnSpeeds = cachedGetStationSpeeds(block.stn1.code);
-              console.warn(`[GOODS SPEED DATA MISSING] fallback to existing behavior for ${dirKey} ${secCode} ${loadType}`);
-           }
+          if (goodsSpeedConfig && goodsSpeedConfig[dirKey] && goodsSpeedConfig[dirKey][secCode] && goodsSpeedConfig[dirKey][secCode][loadType]) {
+            const stats = goodsSpeedConfig[dirKey][secCode][loadType];
+            if (stats.defaultSpeed > 0) {
+              defSpeed = stats.defaultSpeed;
+            }
+          }
+
+          if (override && !isNaN(parseFloat(override)) && parseFloat(override) > 0) {
+            foundSpeed = parseFloat(override);
+          } else if (defSpeed) {
+            foundSpeed = defSpeed;
+          }
+
+          if (foundSpeed) {
+            stnSpeeds = [foundSpeed];
+            let calcTime = (block.dist / foundSpeed) * 60;
+
+            if (goodsLogCount < 10) {
+              console.log(`\n[GOODS EFFECTIVE SPEED]\n` + JSON.stringify({
+                trainId: reqTrainId,
+                direction: dirKey,
+                loadType: loadType,
+                blockSection: secCode,
+                speedMode: 'goods',
+                overrideSpeed: override ? parseFloat(override) : null,
+                defaultGoodsSpeed: defSpeed,
+                effectiveSpeed: foundSpeed
+              }, null, 2));
+
+              console.log(`\n[GOODS TRAVEL TIME]\n` + JSON.stringify({
+                blockSection: secCode,
+                distanceKm: block.dist,
+                effectiveSpeedKmH: foundSpeed,
+                calculatedTravelTimeMinutes: calcTime
+              }, null, 2));
+
+              goodsLogCount++;
+            }
+          } else {
+            stnSpeeds = cachedGetStationSpeeds(block.stn1.code);
+            console.warn(`[GOODS SPEED DATA MISSING] fallback to existing behavior for ${dirKey} ${secCode} ${loadType}`);
+          }
         }
-        
+
         for (const spd of stnSpeeds) {
-        let runTime = spd > 0 ? (block.dist / spd) * 60 : 10;
-        if (isNaN(runTime) || runTime <= 0) runTime = 10;
-        
-        if (i === 0 && accelPenaltyMins > 0) {
-            runTime += accelPenaltyMins;
-        }
-        
-        if (i === n - 2 && decelPenaltyMins > 0) {
-            runTime += decelPenaltyMins;
-        }
-        
-        const testArr = depTime + runTime;
-        diagnostics.blockConflictChecks++;
-        
-        // 6. UPDATE countOverlapsFast()
-        const { sameDirOverlaps, oppDirOverlaps, headwayViolation, automaticSeparationViolation, confTrainId, confTrainDir } = countOverlapsFast(blockInfo, depTime, testArr, localScheduled);
-        
-        let blockConflict = false;
-        let conflictReason = null;
+          let accelMins = 0;
+          let decelMins = 0;
 
-        // 7. UPDATE attemptPathFromTime() & 4. ABSOLUTE SIGNALLING & 5. AUTOMATIC SIGNALLING
-        if (blockInfo.signalling === 'AB') {
+          // Acceleration logic:
+          // - Always apply at origin (i === 0).
+          // - Apply at every intermediate actual stop.
+          //   A station is an actual stop if it has a scheduled halt > 0 OR if it was detained there.
+          const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
+          const stn1Detention = i > 0 ? departAttempt[i] - waitStartedAt[i] : 0;
+          const stn1IsActualStop = i > 0 && (stn1Halt > 0 || stn1Detention > 0);
+
+          if ((i === 0 || stn1IsActualStop) && accelPenaltyMins > 0) {
+            accelMins = accelPenaltyMins;
+          }
+
+          // Deceleration logic:
+          // - Always apply for the last segment (i === n - 2, arriving at final destination).
+          // - Apply when arriving at any intermediate actual stop (planned halt > 0).
+          const stn2Halt = simStopsMap.has(block.stn2.code) ? simStopsMap.get(block.stn2.code) : 0;
+          const stn2IsActualStop = i < n - 2 && (stn2Halt > 0 || detainedStations.has(block.stn2.code));
+
+          if ((i === n - 2 || stn2IsActualStop) && decelPenaltyMins > 0) {
+            decelMins = decelPenaltyMins;
+          }
+
+          let runTime;
+          if (spd > 0) {
+            const vKmMin = spd / 60;
+            const dAccel = (vKmMin / 2) * accelMins;
+            const dDecel = (vKmMin / 2) * decelMins;
+
+            if (block.dist >= dAccel + dDecel) {
+              const dCruise = block.dist - dAccel - dDecel;
+              const tCruise = dCruise / vKmMin;
+              runTime = accelMins + tCruise + decelMins;
+            } else {
+              // Not enough distance to reach full speed. Calculate based on peak speed reached.
+              const invA = accelMins > 0 ? (accelMins / vKmMin) : 0;
+              const invD = decelMins > 0 ? (decelMins / vKmMin) : 0;
+              runTime = Math.sqrt(2 * block.dist * (invA + invD));
+            }
+          } else {
+            runTime = 10;
+          }
+
+          console.log(JSON.stringify({
+            startStation: block.stn1.code,
+            endStation: block.stn2.code,
+            accelerationApplied: accelMins > 0,
+            decelerationApplied: decelMins > 0,
+            accelerationMinutes: accelMins,
+            decelerationMinutes: decelMins,
+            isActualStop: stn1IsActualStop || stn2IsActualStop,
+            isFinalDestination: i === n - 2,
+            calculatedRunTime: runTime
+          }, null, 2));
+
+          const testArr = depTime + runTime;
+          diagnostics.blockConflictChecks++;
+
+          // 6. UPDATE countOverlapsFast()
+          const { sameDirOverlaps, oppDirOverlaps, headwayViolation, automaticSeparationViolation, confTrainId, confTrainDir } = countOverlapsFast(blockInfo, depTime, testArr, localScheduled);
+
+          let blockConflict = false;
+          let conflictReason = null;
+
+          // 7. UPDATE attemptPathFromTime() & 4. ABSOLUTE SIGNALLING & 5. AUTOMATIC SIGNALLING
+          if (blockInfo.signalling === 'AB') {
             // Absolute: Strict physical occupancy + headway
             if (headwayViolation) {
-                blockConflict = true;
-                conflictReason = 'HEADWAY_VIOLATION';
+              blockConflict = true;
+              conflictReason = 'HEADWAY_VIOLATION';
             } else if ((sameDirOverlaps + oppDirOverlaps) >= block.capacity) {
-                blockConflict = true;
-                conflictReason = 'PHYSICAL_OCCUPANCY_CONFLICT';
+              blockConflict = true;
+              conflictReason = 'PHYSICAL_OCCUPANCY_CONFLICT';
             }
-        } else if (blockInfo.signalling === 'AUTO') {
+          } else if (blockInfo.signalling === 'AUTO') {
             // Automatic: Physical block capacity is relaxed based on separation rules for SAME-DIRECTION ONLY.
             // Opposite direction physical block capacity must be strictly maintained (head-on collision prevention).
             if (oppDirOverlaps >= block.capacity) {
-                blockConflict = true;
-                conflictReason = 'OPPOSITE_DIRECTION_PHYSICAL_CONFLICT';
+              blockConflict = true;
+              conflictReason = 'OPPOSITE_DIRECTION_PHYSICAL_CONFLICT';
             } else if (automaticSeparationViolation) {
-                blockConflict = true;
-                conflictReason = 'AUTOMATIC_SEPARATION_VIOLATION';
+              blockConflict = true;
+              conflictReason = 'AUTOMATIC_SEPARATION_VIOLATION';
             }
-        } else {
+          } else {
             // Fallback (treat as Absolute)
             if (headwayViolation || (sameDirOverlaps + oppDirOverlaps) >= block.capacity) {
-                blockConflict = true;
-                conflictReason = 'FALLBACK_CONFLICT';
+              blockConflict = true;
+              conflictReason = 'FALLBACK_CONFLICT';
             }
-        }
+          }
 
-        // 12. DEBUG LOGGING
-        console.log('[SIGNALLING CHECK]', {
+          // 12. DEBUG LOGGING
+          console.log('[SIGNALLING CHECK]', {
             signalling: blockInfo.signalling,
             blockCode: block.code,
             trainId: `sim_${i}`,
@@ -688,104 +732,125 @@ export async function runSimulation({
             oppDirOverlaps,
             headwayViolation,
             automaticSeparationViolation
-        });
+          });
 
-        if (blockConflict) {
+          if (blockConflict) {
             console.log('[BLOCK CONFLICT]', {
-                signalling: blockInfo.signalling,
-                blockCode: block.code,
-                candidateDirection: 'SIMULATED_PATH_DIR',
-                conflictingDirection: confTrainDir,
-                sameDirOverlaps,
-                oppDirOverlaps,
-                headwayViolation,
-                automaticSeparationViolation,
-                finalConflictReason: conflictReason
+              signalling: blockInfo.signalling,
+              blockCode: block.code,
+              candidateDirection: 'SIMULATED_PATH_DIR',
+              conflictingDirection: confTrainDir,
+              sameDirOverlaps,
+              oppDirOverlaps,
+              headwayViolation,
+              automaticSeparationViolation,
+              finalConflictReason: conflictReason
             });
             blockConflictFound = true;
             continue;
+          }
+
+          const nextHalt = simStopsMap.has(block.stn2.code) ? simStopsMap.get(block.stn2.code) : 0;
+          const nextRes = checkCandidateStationLine(block.stn2.code, testArr, testArr + nextHalt, reqDir, reqTrainId);
+          if (nextRes.conflict) {
+            stationConflictFound = true;
+            continue;
+          }
+          assignedSpeed = spd;
+          finalArrTime = testArr;
+          hopResult.currentEndLineId = nextRes.assignedLineId;
+          break;
         }
 
-        const nextHalt = simStopsMap.has(block.stn2.code) ? simStopsMap.get(block.stn2.code) : 0;
-        const nextRes = checkCandidateStationLine(block.stn2.code, testArr, testArr + nextHalt, reqDir, reqTrainId);
-        if (nextRes.conflict) {
-          stationConflictFound = true;
+        if (!conflictReasons[i]) {
+          conflictReasons[i] = new Set();
+        }
+
+        if (assignedSpeed === null) {
+          if (blockConflictFound) conflictReasons[i].add('BLOCK_CONFLICT');
+          if (stationConflictFound) conflictReasons[i].add('STATION_CONFLICT');
+
+          departAttempt[i] += 1;
+          if (i > 0) totalWaitMins += 1;
+          const waitedHere = departAttempt[i] - waitStartedAt[i];
+
+          // BACKTRACK LOGIC FOR UNEXPECTED DETENTION DECELERATION:
+          // If we just got detained (waitedHere === 1) at a pass-through station (halt === 0),
+          // we must backtrack to the previous hop so it can recalculate its runTime WITH deceleration.
+          const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
+          if (waitedHere === 1 && stn1Halt === 0 && i > 0 && !detainedStations.has(block.stn1.code)) {
+            detainedStations.add(block.stn1.code);
+            diagnostics.backtrackCount++;
+            for (let k = i; k < n; k++) {
+              departAttempt[k] = null;
+              waitStartedAt[k] = null;
+              if (k >= i) arrivalAt[k] = null;
+            }
+            for (let k = i - 1; k < n - 1; k++) {
+              hopResult[k] = null;
+              conflictReasons[k] = null;
+            }
+            i -= 1;
+            continue; // Re-evaluate i-1, now stn2IsActualStop will be true
+          }
+
+          if (waitedHere > maxDetentionMins) {
+            diagnostics.backtrackCount++;
+
+            for (let k = i; k < n; k++) {
+              departAttempt[k] = null;
+              waitStartedAt[k] = null;
+              if (k > i) arrivalAt[k] = null;
+            }
+            for (let k = i; k < n - 1; k++) {
+              hopResult[k] = null;
+              conflictReasons[k] = null;
+            }
+
+            i -= 1;
+            if (i >= 0) {
+              departAttempt[i] += 1;
+              detentionCount++;
+            }
+          }
+
+          if (i >= 0) {
+            const stateKey = `${i}|${departAttempt[i]}`;
+            if (visited.has(stateKey)) return null;
+            visited.add(stateKey);
+          }
+
           continue;
         }
-        assignedSpeed = spd;
-        finalArrTime = testArr;
-        hopResult.currentEndLineId = nextRes.assignedLineId;
+
+        const detentionMins = i === 0 ? 0 : departAttempt[i] - waitStartedAt[i];
+        let finalReason = 'NONE';
+        if (detentionMins > 0 && conflictReasons[i].size > 0) {
+          finalReason = Array.from(conflictReasons[i]).join('+');
+        }
+
+        hopResult[i] = {
+          startStn: block.stn1.code,
+          endStn: block.stn2.code,
+          startLineId: i === 0 ? originLineId : hopResult[i - 1].endLineId,
+          endLineId: hopResult.currentEndLineId,
+          arrivalTime: i === 0 ? depTime : arrivalAt[i],
+          normalHalt: halt,
+          earliestDeparture: i === 0 ? depTime : waitStartedAt[i],
+          actualDeparture: depTime,
+          detentionMinutes: detentionMins,
+          detentionReason: finalReason,
+          startMins: depTime,
+          endMins: finalArrTime,
+          speed: assignedSpeed
+        };
+        arrivalAt[i + 1] = finalArrTime;
+        departAttempt[i + 1] = null;
+        i += 1;
         break;
       }
-      
-      if (!conflictReasons[i]) {
-        conflictReasons[i] = new Set();
-      }
-      
-      if (assignedSpeed === null) {
-        if (blockConflictFound) conflictReasons[i].add('BLOCK_CONFLICT');
-        if (stationConflictFound) conflictReasons[i].add('STATION_CONFLICT');
-        
-        departAttempt[i] += 1;
-        if (i > 0) totalWaitMins += 1;
-        const waitedHere = departAttempt[i] - waitStartedAt[i];
-        if (waitedHere > maxDetentionMins) {
-          diagnostics.backtrackCount++;
-          
-          for (let k = i; k < n; k++) {
-             departAttempt[k] = null;
-             waitStartedAt[k] = null;
-             if (k > i) arrivalAt[k] = null;
-          }
-          for (let k = i; k < n - 1; k++) {
-             hopResult[k] = null;
-             conflictReasons[k] = null;
-          }
-          
-          i -= 1;
-          if (i >= 0) {
-            departAttempt[i] += 1;
-            detentionCount++;
-          }
-        }
-        
-        if (i >= 0) {
-          const stateKey = `${i}|${departAttempt[i]}`;
-          if (visited.has(stateKey)) return null;
-          visited.add(stateKey);
-        }
-        
-        continue;
-      }
-      
-      const detentionMins = i === 0 ? 0 : departAttempt[i] - waitStartedAt[i];
-      let finalReason = 'NONE';
-      if (detentionMins > 0 && conflictReasons[i].size > 0) {
-         finalReason = Array.from(conflictReasons[i]).join('+');
-      }
-      
-      hopResult[i] = {
-        startStn: block.stn1.code,
-        endStn: block.stn2.code,
-        startLineId: i === 0 ? originLineId : hopResult[i - 1].endLineId,
-        endLineId: hopResult.currentEndLineId,
-        arrivalTime: i === 0 ? depTime : arrivalAt[i],
-        normalHalt: halt,
-        earliestDeparture: i === 0 ? depTime : waitStartedAt[i],
-        actualDeparture: depTime,
-        detentionMinutes: detentionMins,
-        detentionReason: finalReason,
-        startMins: depTime,
-        endMins: finalArrTime,
-        speed: assignedSpeed
-      };
-      arrivalAt[i + 1] = finalArrTime;
-      departAttempt[i + 1] = null;
-      i += 1;
-      break;
     }
-  }
-};
+  };
 
   const buildBlockData = stations => {
     const blockData = [];
@@ -823,21 +888,21 @@ export async function runSimulation({
           }
         }
       }
-      
+
       // 1. REMOVE ARBITRARY CAPACITY FORMULA
       // Physical capacity per track direction is 1. Double line opposite is handled separately.
       capacity = 1;
-      
+
       if (dist === 0) {
         console.error(`Block section ${blockCode} has 0 distance or not found in sequence between ${stn1.code} and ${stn2.code}`);
         return null;
       }
-      blockData.push({ 
-        stn1, 
-        stn2, 
-        dist, 
-        capacity, 
-        numPhysicalLines, 
+      blockData.push({
+        stn1,
+        stn2,
+        dist,
+        capacity,
+        numPhysicalLines,
         blockCode,
         signalling: isAuto ? 'AUTO' : 'AB'
       });
@@ -921,7 +986,7 @@ export async function runSimulation({
     return [];
   }
   const fwdStart = Math.min(srcIdx, dstIdx);
-  const fwdEnd   = Math.max(srcIdx, dstIdx);
+  const fwdEnd = Math.max(srcIdx, dstIdx);
   const fwdStationsBase = layoutStations.slice(fwdStart, fwdEnd + 1);
   const bwdStationsBase = [...fwdStationsBase].reverse();
   const userWantsFwd = srcIdx <= dstIdx;
@@ -985,10 +1050,10 @@ export async function runSimulation({
     }
 
     diagnostics.attemptCount++;
-    
+
     const currentPathsCount = simulatedPaths.length + foundPaths.length;
     const reqTrainId = `SIM_ATTEMPT_${currentPathsCount + 1}_${tryFwd ? 'FWD' : 'BWD'}_${iterCount}`;
-    
+
     let result, pathStations, isFwdAttempt, pathPrefix;
     if (tryFwd) {
       result = await attemptPathFromTime(fwdStations, fwdBlockData, fwdBlockInfos, tryStartMinsFwd, localScheduled, reqTrainId);
@@ -1016,43 +1081,43 @@ export async function runSimulation({
       const newPath = formatSimulatedPath(path, pathStations, isFwdAttempt, pathPrefix, totalWaitMins, detentionCount, currentPathsCount);
       foundPaths.push(newPath);
       localScheduled.push(newPath);
-      
+
       // Update persistent allocations with the newly accepted path so future candidates see it
       const tId = newPath.trainNo;
       const tDir = newPath.isForward ? 'DOWN' : 'UP';
       for (const stop of newPath.stops) {
-          if (stop.stationLineId) {
-              const allocations = initAllocations(stop.station);
-              const newAlloc = { lineId: stop.stationLineId, tId, tDir, tStart: stop.absArrMins, tEnd: stop.absDepMins, daysBits: null, overflow: false };
-              
-              for (const a of allocations) {
-                  if (a.lineId !== newAlloc.lineId) continue;
-                  
-                  for (let day = 0; day < 7; day++) {
-                      if (a.daysBits && a.daysBits.length === 7 && a.daysBits[day] !== '1') continue;
-                      const aStart = a.tStart + (a.daysBits ? day * 1440 : 0);
-                      const aEnd = a.tEnd + (a.daysBits ? day * 1440 : 0);
-                      
-                      if (aStart < newAlloc.tEnd && newAlloc.tStart < (aEnd + STATION_SAFETY_MARGIN)) {
-                          console.log('[ILLEGAL COMMIT DETECTED]', JSON.stringify({
-                              station: stop.station,
-                              lineId: stop.stationLineId,
-                              existingTrain: a.tId,
-                              candidateTrain: tId,
-                              existingStart: aStart,
-                              existingEnd: aEnd,
-                              candidateStart: newAlloc.tStart,
-                              candidateEnd: newAlloc.tEnd,
-                              overlapStart: Math.max(aStart, newAlloc.tStart),
-                              overlapEnd: Math.min(aEnd + STATION_SAFETY_MARGIN, newAlloc.tEnd)
-                          }, null, 2));
-                      }
-                  }
-              }
+        if (stop.stationLineId) {
+          const allocations = initAllocations(stop.station);
+          const newAlloc = { lineId: stop.stationLineId, tId, tDir, tStart: stop.absArrMins, tEnd: stop.absDepMins, daysBits: null, overflow: false };
 
-              allocations.push(newAlloc);
-              console.log('[GLOBAL ALLOCATION SIZE]', { station: stop.station, allocationCount: allocations.length });
+          for (const a of allocations) {
+            if (a.lineId !== newAlloc.lineId) continue;
+
+            for (let day = 0; day < 7; day++) {
+              if (a.daysBits && a.daysBits.length === 7 && a.daysBits[day] !== '1') continue;
+              const aStart = a.tStart + (a.daysBits ? day * 1440 : 0);
+              const aEnd = a.tEnd + (a.daysBits ? day * 1440 : 0);
+
+              if (aStart < newAlloc.tEnd && newAlloc.tStart < (aEnd + STATION_SAFETY_MARGIN)) {
+                console.log('[ILLEGAL COMMIT DETECTED]', JSON.stringify({
+                  station: stop.station,
+                  lineId: stop.stationLineId,
+                  existingTrain: a.tId,
+                  candidateTrain: tId,
+                  existingStart: aStart,
+                  existingEnd: aEnd,
+                  candidateStart: newAlloc.tStart,
+                  candidateEnd: newAlloc.tEnd,
+                  overlapStart: Math.max(aStart, newAlloc.tStart),
+                  overlapEnd: Math.min(aEnd + STATION_SAFETY_MARGIN, newAlloc.tEnd)
+                }, null, 2));
+              }
+            }
           }
+
+          allocations.push(newAlloc);
+          console.log('[GLOBAL ALLOCATION SIZE]', { station: stop.station, allocationCount: allocations.length });
+        }
       }
 
       if (tryFwd) {
@@ -1076,136 +1141,136 @@ export async function runSimulation({
   if (debug) {
     console.log('--- SIMULATOR FINAL DIAGNOSTICS ---');
     console.log('[113 TRAIN INVESTIGATION]', {
-        totalScheduled: foundPaths.length,
-        stationConflictChecks: diagnostics.stationConflictChecks,
-        stationCapacityFailures: diagnostics.stationCapacityFailures || 0,
-        blockConflictChecks: diagnostics.blockConflictChecks
+      totalScheduled: foundPaths.length,
+      stationConflictChecks: diagnostics.stationConflictChecks,
+      stationCapacityFailures: diagnostics.stationCapacityFailures || 0,
+      blockConflictChecks: diagnostics.blockConflictChecks
     });
-    
+
     const summaryReports = [];
     let totalSameLineOverlapCount = 0;
-    
+
     for (const stn of Object.keys(globalStationAllocations)) {
-        const allocations = globalStationAllocations[stn] || [];
-        const stnLines = stationLineDirs[stn] || {};
-        const physicalLinesArr = (layout && layout.stations && layout.stations[stn] && layout.stations[stn].lines) ? layout.stations[stn].lines : [];
-        const physicalLineCount = physicalLinesArr.length;
-        const schedulerLineCount = Object.keys(stnLines).length;
-        
-        if (schedulerLineCount !== physicalLineCount) {
-            console.log('[STATION LINE COUNT MISMATCH]', {
-                station: stn,
-                physicalLineCount,
-                schedulerLineCount,
-                schedulerLines: Object.keys(stnLines),
-                physicalLines: physicalLinesArr.map(l => ({
-                    seq: l.MANSEQNUMB,
-                    line: l.MAVLINENUMB,
-                    category: l.MACLINECATEGORY
-                }))
-            });
-        }
-        
-        let maxOccupancy = 0;
-        let maxInterval = null;
-        let maxTrains = [];
-        let sameLineOverlapCount = 0;
-        
-        for (const a of allocations) {
-            // Check for each day in a 7-day period to find absolute max
-            for (let day = 0; day < 7; day++) {
-                if (a.daysBits && a.daysBits.length === 7 && a.daysBits[day] !== '1') continue;
-                
-                const t = a.tStart + (a.daysBits ? day * 1440 : 0);
-                
-                let currentOverlapping = [];
-                let overlapDict = {};
-                let trainsAtT = [];
-                
-                for (const b of allocations) {
-                    if (b.daysBits && b.daysBits.length === 7 && b.daysBits[day] !== '1') continue;
-                    
-                    const bStart = b.tStart + (b.daysBits ? day * 1440 : 0);
-                    const bEnd = b.tEnd + (b.daysBits ? day * 1440 : 0);
-                    
-                    if (bStart <= t && t < (bEnd + STATION_SAFETY_MARGIN)) {
-                        const tr = {
-                            trainId: b.tId,
-                            lineId: b.lineId,
-                            direction: b.tDir,
-                            start: bStart,
-                            end: bEnd,
-                            daysBits: b.daysBits
-                        };
-                        currentOverlapping.push(tr);
-                        trainsAtT.push(tr);
-                        overlapDict[b.lineId] = (overlapDict[b.lineId] || 0) + 1;
-                    }
-                }
-                
-                let hasSameLineOverlap = false;
-                for (const l in overlapDict) {
-                    if (overlapDict[l] > 1) {
-                        hasSameLineOverlap = true;
-                        sameLineOverlapCount++;
-                        
-                        // Print REAL STATION OVERLAP
-                        const overlappingOnLine = trainsAtT.filter(tr => String(tr.lineId) === String(l));
-                        if (overlappingOnLine.length >= 2) {
-                            const trA = overlappingOnLine[0];
-                            const trB = overlappingOnLine[1];
-                            console.log('[REAL STATION OVERLAP]', JSON.stringify({
-                                station: stn,
-                                lineId: l,
-                                trainA: trA.trainId,
-                                trainB: trB.trainId,
-                                directionA: trA.direction,
-                                directionB: trB.direction,
-                                arrivalA: trA.start,
-                                departureA: trA.end,
-                                arrivalB: trB.start,
-                                departureB: trB.end,
-                                daysBitsA: trA.daysBits,
-                                daysBitsB: trB.daysBits,
-                                overlapStart: Math.max(trA.start, trB.start),
-                                overlapEnd: Math.min(trA.end + STATION_SAFETY_MARGIN, trB.end + STATION_SAFETY_MARGIN)
-                            }, null, 2));
-                        }
-                    }
-                }
-                
-                if (currentOverlapping.length > maxOccupancy) {
-                    maxOccupancy = currentOverlapping.length;
-                    maxTrains = currentOverlapping;
-                    maxInterval = t;
-                }
+      const allocations = globalStationAllocations[stn] || [];
+      const stnLines = stationLineDirs[stn] || {};
+      const physicalLinesArr = (layout && layout.stations && layout.stations[stn] && layout.stations[stn].lines) ? layout.stations[stn].lines : [];
+      const physicalLineCount = physicalLinesArr.length;
+      const schedulerLineCount = Object.keys(stnLines).length;
+
+      if (schedulerLineCount !== physicalLineCount) {
+        console.log('[STATION LINE COUNT MISMATCH]', {
+          station: stn,
+          physicalLineCount,
+          schedulerLineCount,
+          schedulerLines: Object.keys(stnLines),
+          physicalLines: physicalLinesArr.map(l => ({
+            seq: l.MANSEQNUMB,
+            line: l.MAVLINENUMB,
+            category: l.MACLINECATEGORY
+          }))
+        });
+      }
+
+      let maxOccupancy = 0;
+      let maxInterval = null;
+      let maxTrains = [];
+      let sameLineOverlapCount = 0;
+
+      for (const a of allocations) {
+        // Check for each day in a 7-day period to find absolute max
+        for (let day = 0; day < 7; day++) {
+          if (a.daysBits && a.daysBits.length === 7 && a.daysBits[day] !== '1') continue;
+
+          const t = a.tStart + (a.daysBits ? day * 1440 : 0);
+
+          let currentOverlapping = [];
+          let overlapDict = {};
+          let trainsAtT = [];
+
+          for (const b of allocations) {
+            if (b.daysBits && b.daysBits.length === 7 && b.daysBits[day] !== '1') continue;
+
+            const bStart = b.tStart + (b.daysBits ? day * 1440 : 0);
+            const bEnd = b.tEnd + (b.daysBits ? day * 1440 : 0);
+
+            if (bStart <= t && t < (bEnd + STATION_SAFETY_MARGIN)) {
+              const tr = {
+                trainId: b.tId,
+                lineId: b.lineId,
+                direction: b.tDir,
+                start: bStart,
+                end: bEnd,
+                daysBits: b.daysBits
+              };
+              currentOverlapping.push(tr);
+              trainsAtT.push(tr);
+              overlapDict[b.lineId] = (overlapDict[b.lineId] || 0) + 1;
             }
+          }
+
+          let hasSameLineOverlap = false;
+          for (const l in overlapDict) {
+            if (overlapDict[l] > 1) {
+              hasSameLineOverlap = true;
+              sameLineOverlapCount++;
+
+              // Print REAL STATION OVERLAP
+              const overlappingOnLine = trainsAtT.filter(tr => String(tr.lineId) === String(l));
+              if (overlappingOnLine.length >= 2) {
+                const trA = overlappingOnLine[0];
+                const trB = overlappingOnLine[1];
+                console.log('[REAL STATION OVERLAP]', JSON.stringify({
+                  station: stn,
+                  lineId: l,
+                  trainA: trA.trainId,
+                  trainB: trB.trainId,
+                  directionA: trA.direction,
+                  directionB: trB.direction,
+                  arrivalA: trA.start,
+                  departureA: trA.end,
+                  arrivalB: trB.start,
+                  departureB: trB.end,
+                  daysBitsA: trA.daysBits,
+                  daysBitsB: trB.daysBits,
+                  overlapStart: Math.max(trA.start, trB.start),
+                  overlapEnd: Math.min(trA.end + STATION_SAFETY_MARGIN, trB.end + STATION_SAFETY_MARGIN)
+                }, null, 2));
+              }
+            }
+          }
+
+          if (currentOverlapping.length > maxOccupancy) {
+            maxOccupancy = currentOverlapping.length;
+            maxTrains = currentOverlapping;
+            maxInterval = t;
+          }
         }
-        
-        const report = {
-            station: stn,
-            physicalLineCount,
-            schedulerLineCount,
-            maxSimultaneousOccupancy: maxOccupancy,
-            capacityExceeded: maxOccupancy > physicalLineCount,
-            sameLineOverlapCount,
-            maxInterval,
-            maxTrains
-        };
-        
-        summaryReports.push(report);
-        totalSameLineOverlapCount += sameLineOverlapCount;
-        
-        console.log('[FINAL STATION CAPACITY SUMMARY]', JSON.stringify(report, null, 2));
+      }
+
+      const report = {
+        station: stn,
+        physicalLineCount,
+        schedulerLineCount,
+        maxSimultaneousOccupancy: maxOccupancy,
+        capacityExceeded: maxOccupancy > physicalLineCount,
+        sameLineOverlapCount,
+        maxInterval,
+        maxTrains
+      };
+
+      summaryReports.push(report);
+      totalSameLineOverlapCount += sameLineOverlapCount;
+
+      console.log('[FINAL STATION CAPACITY SUMMARY]', JSON.stringify(report, null, 2));
     }
-    
+
     console.log('[FINAL STATION ALLOCATIONS]', JSON.stringify(globalStationAllocations, null, 2));
-    
+
     console.log('[FINAL STATION CAPACITY RESULT]', JSON.stringify({
-        acceptedTrains: foundPaths.length,
-        stationConflicts: diagnostics.stationConflictChecks,
-        illegalOverlaps: totalSameLineOverlapCount,
-        capacityViolations: summaryReports.filter(r => r.capacityExceeded).length
+      acceptedTrains: foundPaths.length,
+      stationConflicts: diagnostics.stationConflictChecks,
+      illegalOverlaps: totalSameLineOverlapCount,
+      capacityViolations: summaryReports.filter(r => r.capacityExceeded).length
     }, null, 2));
 
     console.log({

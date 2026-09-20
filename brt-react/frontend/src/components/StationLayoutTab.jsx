@@ -531,9 +531,9 @@ export default function StationLayoutTab() {
         const platformToDelete = options.platform;
         if (newData.sheets.Platform) {
           // Identify EXACT platform based on code, seq, num, position
-          newData.sheets.Platform = newData.sheets.Platform.filter(p => 
-            !(p.MAVSTTNCODE === platformToDelete.MAVSTTNCODE && 
-              p.MANSEQNUMB === platformToDelete.MANSEQNUMB && 
+          newData.sheets.Platform = newData.sheets.Platform.filter(p =>
+            !(p.MAVSTTNCODE === platformToDelete.MAVSTTNCODE &&
+              p.MANSEQNUMB === platformToDelete.MANSEQNUMB &&
               p.MAVPLATFORMNUMB === platformToDelete.MAVPLATFORMNUMB &&
               p.MAVPFVPOSITION === platformToDelete.MAVPFVPOSITION &&
               p.MAVPFHPOSITION === platformToDelete.MAVPFHPOSITION)
@@ -543,11 +543,11 @@ export default function StationLayoutTab() {
         const targetPlatform = options.platform;
         if (newData.sheets.Platform) {
           newData.sheets.Platform = newData.sheets.Platform.map(p => {
-            if (p.MAVSTTNCODE === targetPlatform.MAVSTTNCODE && 
-                p.MANSEQNUMB === targetPlatform.MANSEQNUMB && 
-                p.MAVPLATFORMNUMB === targetPlatform.MAVPLATFORMNUMB &&
-                p.MAVPFVPOSITION === targetPlatform.MAVPFVPOSITION &&
-                p.MAVPFHPOSITION === targetPlatform.MAVPFHPOSITION) {
+            if (p.MAVSTTNCODE === targetPlatform.MAVSTTNCODE &&
+              p.MANSEQNUMB === targetPlatform.MANSEQNUMB &&
+              p.MAVPLATFORMNUMB === targetPlatform.MAVPLATFORMNUMB &&
+              p.MAVPFVPOSITION === targetPlatform.MAVPFVPOSITION &&
+              p.MAVPFHPOSITION === targetPlatform.MAVPFHPOSITION) {
               return { ...p, MAVPFHPOSITION: options.newHPos };
             }
             return p;
@@ -669,9 +669,9 @@ export default function StationLayoutTab() {
   const handleUndo = () => {
     if (history.length === 0) return;
     const previousSheets = cloneSheets(history[history.length - 1]);
-    
+
     setHistory(prev => prev.slice(0, -1));
-    
+
     const restoredData = { ...data, sheets: previousSheets };
     setData(restoredData);
     handleGenerate(selectedValue, restoredData);

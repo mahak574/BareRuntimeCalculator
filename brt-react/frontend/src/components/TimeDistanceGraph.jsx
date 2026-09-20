@@ -105,7 +105,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
       layoutSequenceLength: layout?.sequence?.length,
       shouldCall: !!(layout && layout.sequence)
     });
-    
+
     if (layout && layout.sequence) {
       console.log("[GOODS DEBUG] >>> CALLING calculateGoodsSpeedConfig()");
       calculateGoodsSpeedConfig(null, layout).then(config => {
@@ -434,7 +434,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
       sgacCdslBackwardLoaded: goodsSpeedConfig?.backward?.["SGAC-CDSL"]?.LOADED?.defaultSpeed,
       sgacCdslBackwardEmpty: goodsSpeedConfig?.backward?.["SGAC-CDSL"]?.EMPTY?.defaultSpeed
     });
-    
+
     if (!layout || !layout.sequence) return [];
     let rows = [];
     let lastStn = null;
@@ -446,7 +446,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
           const fwdName = `${lastStn.code}-${node.code}`;
           const bwdName = `${node.code}-${lastStn.code}`;
           const secCode = currentBlock.code;
-          
+
           console.log("[GOODS SECTION CODE]", {
             layoutBlockCode: currentBlock.code,
             normalizedLayoutBlockCode: String(currentBlock.code || "").trim().toUpperCase(),
@@ -456,7 +456,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
 
           const fwdStats = goodsSpeedConfig?.forward?.[secCode] || { LOADED: {}, EMPTY: {} };
           const bwdStats = goodsSpeedConfig?.backward?.[secCode] || { LOADED: {}, EMPTY: {} };
-          
+
           console.log("[GOODS ROW TRACE]", {
             secCode,
             fwdName,
@@ -468,7 +468,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
             bwdLoaded: goodsSpeedConfig?.backward?.[secCode]?.LOADED?.defaultSpeed,
             bwdEmpty: goodsSpeedConfig?.backward?.[secCode]?.EMPTY?.defaultSpeed
           });
-          
+
           rows.push({
             secCode,
             fwdName,
@@ -923,7 +923,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   return (
                     <>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Total Trains Simulated</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Total Simulated Paths</td>
                         <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.totalTrains}</td>
                         <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.totalTrains}</td>
                       </tr>
@@ -938,7 +938,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.avgSpeed}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Detention Count (All Trains)</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Detention Count</td>
                         <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.detCount}</td>
                         <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.detCount}</td>
                       </tr>
@@ -1447,14 +1447,14 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                     goodsSpeedRows.map((row, idx) => {
                       const getOvr = (dir, load) => goodsSpeedOverrides[`${dir}_${row.secCode}_${load}`] || '';
                       const setOvr = (dir, load, val) => setGoodsSpeedOverrides(prev => ({ ...prev, [`${dir}_${row.secCode}_${load}`]: val }));
-                      
+
                       const formatDef = (v, label = '') => {
                         console.log("[GOODS DISPLAY TRACE]", {
                           label,
                           value: v,
                           type: typeof v
                         });
-                      
+
                         return v !== null && v !== undefined && Number.isFinite(Number(v))
                           ? Number(v).toFixed(1)
                           : 'N/A';

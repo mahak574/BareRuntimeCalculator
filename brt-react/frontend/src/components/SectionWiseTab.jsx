@@ -97,8 +97,8 @@ export default function SectionWiseTab() {
         const shownSpeeds = speedFilter ? [speedFilter] : data.speed_classes;
         const shownTrains = speedFilter
           ? data.trains_summary.filter(
-              (t) => t.mps !== null && t.mps !== undefined && Math.round(t.mps) === Math.round(parseFloat(speedFilter))
-            )
+            (t) => t.mps !== null && t.mps !== undefined && Math.round(t.mps) === Math.round(parseFloat(speedFilter))
+          )
           : data.trains_summary;
 
         return (

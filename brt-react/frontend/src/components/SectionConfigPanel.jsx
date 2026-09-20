@@ -29,7 +29,7 @@ const FIRST_LOOP_OPTIONS = [
   { label: '50 Kmph', value: 50 }
 ];
 const COMMON_LOOP_OPTIONS = FIRST_LOOP_OPTIONS;
-const OTHER_LOOP_OPTIONS  = FIRST_LOOP_OPTIONS;
+const OTHER_LOOP_OPTIONS = FIRST_LOOP_OPTIONS;
 
 const SOW_OPTIONS = [
   { label: 'Absolute Block System', value: 'AB' },
@@ -104,13 +104,13 @@ function ConfirmAllModal({ nodes, config, data, onModifyLayout, onClose }) {
 
         <div className="cfg2-confirm-preview">
           {[
-            { label: 'Tracks',             val: TRACK_OPTIONS.find(o => o.value === config.tracks)?.label },
-            { label: 'Section Speed',      val: `${config.sectionSpeed} Kmph` },
-            { label: 'System of Working',  val: SOW_OPTIONS.find(o => o.value === config.sow)?.label },
-            { label: 'Block Op. Time',     val: `${config.blockTime} min` },
-            { label: 'First Loop Speed',   val: `${config.firstLoop} Kmph` },
-            { label: 'Common Loop Speed',  val: `${config.commonLoop} Kmph` },
-            { label: 'Other Loop Speed',   val: `${config.otherLoop} Kmph` },
+            { label: 'Tracks', val: TRACK_OPTIONS.find(o => o.value === config.tracks)?.label },
+            { label: 'Section Speed', val: `${config.sectionSpeed} Kmph` },
+            { label: 'System of Working', val: SOW_OPTIONS.find(o => o.value === config.sow)?.label },
+            { label: 'Block Op. Time', val: `${config.blockTime} min` },
+            { label: 'First Loop Speed', val: `${config.firstLoop} Kmph` },
+            { label: 'Common Loop Speed', val: `${config.commonLoop} Kmph` },
+            { label: 'Other Loop Speed', val: `${config.otherLoop} Kmph` },
           ].map(item => (
             <div key={item.label} className="cfg2-preview-row">
               <span className="cfg2-preview-label">{item.label}</span>
@@ -187,16 +187,16 @@ export default function TrackConfigButton({ generatedLayout, data, onModifyLayou
 
           <div className="cfg2-params">
             <div className="cfg2-section-heading">Track & Speed</div>
-            <ParamRow label="Tracks"            value={config.tracks}       options={TRACK_OPTIONS}        onChange={set('tracks')} />
-            <ParamRow label="Section Speed"     value={config.sectionSpeed} options={SECTION_SPEED_OPTIONS} onChange={set('sectionSpeed')} />
-            <ParamRow label="System of Working" value={config.sow}          options={SOW_OPTIONS}           onChange={set('sow')} />
-            <ParamRow label="Block Op. Time"    value={config.blockTime}    options={BLOCK_TIME_OPTIONS}    onChange={set('blockTime')} />
+            <ParamRow label="Tracks" value={config.tracks} options={TRACK_OPTIONS} onChange={set('tracks')} />
+            <ParamRow label="Section Speed" value={config.sectionSpeed} options={SECTION_SPEED_OPTIONS} onChange={set('sectionSpeed')} />
+            <ParamRow label="System of Working" value={config.sow} options={SOW_OPTIONS} onChange={set('sow')} />
+            <ParamRow label="Block Op. Time" value={config.blockTime} options={BLOCK_TIME_OPTIONS} onChange={set('blockTime')} />
 
             <div className="cfg2-divider" />
             <div className="cfg2-section-heading">Loop Speeds</div>
-            <ParamRow label="First Loop Speed"  value={config.firstLoop}   options={FIRST_LOOP_OPTIONS}   onChange={set('firstLoop')} />
-            <ParamRow label="Common Loop Speed" value={config.commonLoop}  options={COMMON_LOOP_OPTIONS}  onChange={set('commonLoop')} />
-            <ParamRow label="Other Loop Speed"  value={config.otherLoop}   options={OTHER_LOOP_OPTIONS}   onChange={set('otherLoop')} />
+            <ParamRow label="First Loop Speed" value={config.firstLoop} options={FIRST_LOOP_OPTIONS} onChange={set('firstLoop')} />
+            <ParamRow label="Common Loop Speed" value={config.commonLoop} options={COMMON_LOOP_OPTIONS} onChange={set('commonLoop')} />
+            <ParamRow label="Other Loop Speed" value={config.otherLoop} options={OTHER_LOOP_OPTIONS} onChange={set('otherLoop')} />
           </div>
 
           <div className="cfg2-divider" />

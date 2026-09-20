@@ -57,7 +57,7 @@ export default function TrainWiseTab() {
 
   useEffect(() => {
     api.trains().then((r) => setTrains(r.trains)).catch((e) => setError(e.message));
-    api.chartBounds().then(setChartBounds).catch(() => {});
+    api.chartBounds().then(setChartBounds).catch(() => { });
   }, []);
   return (
     <div>
@@ -95,116 +95,116 @@ export default function TrainWiseTab() {
           />
 
           <table>
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Route</th>
-                  <th>Flag</th>
-                  <th>Existing Runtime</th>
-                  <th>Samples</th>
-                  <th>Raw BRT</th>
-                  <th>Accel</th>
-                  <th>Decel</th>
-                  <th title="Route-wide mean of Accel across legs (used only when this leg's own Accel is missing and its case needs one)">Accel Mean</th>
-                  <th title="Route-wide mean of Decel across legs (used only when this leg's own Decel is missing and its case needs one)">Decel Mean</th>
-                  <th title="T-T: Raw · T-A: Raw−Decel · D-T: Raw−Accel · D-A: Raw−Accel−Decel">Net BRT</th>
-                  <th>Rounded Est. Runtime</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.legs.map((leg, i) => (
-                  <React.Fragment key={i}>
-                    <tr>
-                      <td>
-                        <button className="icon-btn" onClick={() => toggleLeg(i, leg)}>
-                          {openLeg === i ? "−" : "+"}
-                        </button>
-                      </td>
-                      <td>{leg.station} → {leg.next_station}</td>
-                      <td>{leg.flag}</td>
-                      <td>{mmss(leg.existing_runtime)}</td>
-                      <td>{leg.samples}</td>
-                      <td>{mmss(leg.raw_brt)}</td>
-                      <td>{mmss(leg.accel)}</td>
-                      <td>{mmss(leg.decel)}</td>
-                      <td>{mmss(leg.accel_mean)}</td>
-                      <td>{mmss(leg.decel_mean)}</td>
-                      <td>{mmss(leg.net_brt)}</td>
-                      <td>
-                        <span className="cell-with-pill">
-                          {mmss(leg.rounded_estimate)}
-                          <ConfidencePill value={leg.confidence} lowConfidence={leg.low_confidence} />
-                        </span>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Route</th>
+                <th>Flag</th>
+                <th>Existing Runtime</th>
+                <th>Samples</th>
+                <th>Raw BRT</th>
+                <th>Accel</th>
+                <th>Decel</th>
+                <th title="Route-wide mean of Accel across legs (used only when this leg's own Accel is missing and its case needs one)">Accel Mean</th>
+                <th title="Route-wide mean of Decel across legs (used only when this leg's own Decel is missing and its case needs one)">Decel Mean</th>
+                <th title="T-T: Raw · T-A: Raw−Decel · D-T: Raw−Accel · D-A: Raw−Accel−Decel">Net BRT</th>
+                <th>Rounded Est. Runtime</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.legs.map((leg, i) => (
+                <React.Fragment key={i}>
+                  <tr>
+                    <td>
+                      <button className="icon-btn" onClick={() => toggleLeg(i, leg)}>
+                        {openLeg === i ? "−" : "+"}
+                      </button>
+                    </td>
+                    <td>{leg.station} → {leg.next_station}</td>
+                    <td>{leg.flag}</td>
+                    <td>{mmss(leg.existing_runtime)}</td>
+                    <td>{leg.samples}</td>
+                    <td>{mmss(leg.raw_brt)}</td>
+                    <td>{mmss(leg.accel)}</td>
+                    <td>{mmss(leg.decel)}</td>
+                    <td>{mmss(leg.accel_mean)}</td>
+                    <td>{mmss(leg.decel_mean)}</td>
+                    <td>{mmss(leg.net_brt)}</td>
+                    <td>
+                      <span className="cell-with-pill">
+                        {mmss(leg.rounded_estimate)}
+                        <ConfidencePill value={leg.confidence} lowConfidence={leg.low_confidence} />
+                      </span>
+                    </td>
+                  </tr>
+                  {openLeg === i && (
+                    <tr className="chart-row">
+                      <td colSpan={12}>
+                        {legChartLoading && <div className="loading">Loading charts…</div>}
+                        {legChart && (() => {
+                          let xDomain, yDomain;
+                          let validPoints = [];
+                          if (legChart.points?.length > 0) {
+                            validPoints = legChart.points.filter(p => p != null && p.minutes != null && !isNaN(p.minutes) && p.date != null);
+                            if (validPoints.length > 0) {
+                              const xs = validPoints.map(p => new Date(p.date).getTime());
+                              const ys = validPoints.map(p => p.minutes);
+                              const minX = Math.min(...xs);
+                              const maxX = Math.max(...xs);
+                              const minY = Math.min(...ys);
+                              const maxY = Math.max(...ys);
+                              const xPad = (maxX - minX) * 0.05 || 86400000;
+                              const yPad = (maxY - minY) * 0.05 || 1;
+                              xDomain = [minX - xPad, maxX + xPad];
+                              yDomain = [Math.max(0, minY - yPad), maxY + yPad];
+                            }
+                          }
+                          return (
+                            <div className="chart-grid chart-row-anim">
+                              <LegChart
+                                title={`All Samples — ${leg.station} → ${leg.next_station}`}
+                                points={legChart.points}
+                                mode="raw"
+                                xDomain={xDomain}
+                                yDomain={yDomain}
+                              />
+                              <LegChart
+                                title="Outlier Removal (MAD)"
+                                points={legChart.points}
+                                mode="outlier"
+                                xDomain={xDomain}
+                                yDomain={yDomain}
+                              />
+                              <LegChart
+                                title="KMeans Clusters (k=3)"
+                                points={legChart.points ? legChart.points.filter(p => !p.is_outlier) : []}
+                                mode="cluster"
+                                xDomain={xDomain}
+                                yDomain={yDomain}
+                              />
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
-                    {openLeg === i && (
-                      <tr className="chart-row">
-                        <td colSpan={12}>
-                          {legChartLoading && <div className="loading">Loading charts…</div>}
-                          {legChart && (() => {
-                            let xDomain, yDomain;
-                            let validPoints = [];
-                            if (legChart.points?.length > 0) {
-                              validPoints = legChart.points.filter(p => p != null && p.minutes != null && !isNaN(p.minutes) && p.date != null);
-                              if (validPoints.length > 0) {
-                                const xs = validPoints.map(p => new Date(p.date).getTime());
-                                const ys = validPoints.map(p => p.minutes);
-                                const minX = Math.min(...xs);
-                                const maxX = Math.max(...xs);
-                                const minY = Math.min(...ys);
-                                const maxY = Math.max(...ys);
-                                const xPad = (maxX - minX) * 0.05 || 86400000;
-                                const yPad = (maxY - minY) * 0.05 || 1;
-                                xDomain = [minX - xPad, maxX + xPad];
-                                yDomain = [Math.max(0, minY - yPad), maxY + yPad];
-                              }
-                            }
-                            return (
-                              <div className="chart-grid chart-row-anim">
-                                <LegChart
-                                  title={`All Samples — ${leg.station} → ${leg.next_station}`}
-                                  points={legChart.points}
-                                  mode="raw"
-                                  xDomain={xDomain}
-                                  yDomain={yDomain}
-                                />
-                                <LegChart 
-                                  title="Outlier Removal (MAD)" 
-                                  points={legChart.points} 
-                                  mode="outlier" 
-                                  xDomain={xDomain}
-                                  yDomain={yDomain}
-                                />
-                                <LegChart
-                                  title="KMeans Clusters (k=3)"
-                                  points={legChart.points ? legChart.points.filter(p => !p.is_outlier) : []}
-                                  mode="cluster"
-                                  xDomain={xDomain}
-                                  yDomain={yDomain}
-                                />
-                              </div>
-                            );
-                          })()}
-                        </td>
-                      </tr>
-                    )}
-                  </React.Fragment>
-                ))}
-                <tr className="total-row">
-                  <td></td>
-                  <td>TOTAL</td>
-                  <td></td>
-                  <td>{mmss(data.totals.existing_sum)}</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td>{mmss(data.totals.net_sum)}</td>
-                  <td>{mmss(data.totals.rounded_sum)}</td>
-                </tr>
-              </tbody>
+                  )}
+                </React.Fragment>
+              ))}
+              <tr className="total-row">
+                <td></td>
+                <td>TOTAL</td>
+                <td></td>
+                <td>{mmss(data.totals.existing_sum)}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>{mmss(data.totals.net_sum)}</td>
+                <td>{mmss(data.totals.rounded_sum)}</td>
+              </tr>
+            </tbody>
           </table>
           <div className="variance-line">
             Variance: {data.totals.variance_pct !== null ? pct(data.totals.variance_pct, 2) : "- (insufficient paired data)"}
