@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+dist/
+
+# Vite cache
+.vite/
+brt-react/backend/KOTA-APR-MAY-26.csv
+brt-react/backend/cris 1.csv
+brt-react/backend/BSP-APR-MAY-26.csv
+brt-react/backend/bina kota.xlsx
+brt-react/backend/cris 2.xlsx
+brt-react/frontend/KOTA-APR-MAY-26.csv
+brt-react/frontend/public/data/BSP-APR-MAY-26.csv
+brt-react/frontend/public/data/KOTA-APR-MAY-26.csv
