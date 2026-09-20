@@ -3,7 +3,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 const TrackToggle = ({ state, side, onClick }) => {
   const isLeft = side === 'left';
   const isConnected = !!state;
-  
+
   let color = '#cbd5e1';
   let bgColor = '#f8fafc';
   let borderColor = '#e2e8f0';
@@ -28,31 +28,31 @@ const TrackToggle = ({ state, side, onClick }) => {
     }
   }
 
-  const tooltip = !state ? "Click to connect (Send)" 
-                : state === 'S' ? "Click to change to Receive"
-                : state === 'R' ? "Click to change to Both Directions"
-                : "Click to disconnect";
+  const tooltip = !state ? "Click to connect (Send)"
+    : state === 'S' ? "Click to change to Receive"
+      : state === 'R' ? "Click to change to Both Directions"
+        : "Click to disconnect";
 
   return (
-    <div 
+    <div
       onClick={onClick}
       style={{
-         cursor: 'pointer',
-         height: '28px', width: '48px',
-         display: 'flex', alignItems: 'center', justifyContent: 'center',
-         backgroundColor: bgColor,
-         border: `1px solid ${borderColor}`,
-         borderRadius: '4px',
-         margin: '0 auto',
-         transition: 'all 0.2s',
-         position: 'relative'
+        cursor: 'pointer',
+        height: '28px', width: '48px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: bgColor,
+        border: `1px solid ${borderColor}`,
+        borderRadius: '4px',
+        margin: '0 auto',
+        transition: 'all 0.2s',
+        position: 'relative'
       }}
       title={tooltip}
     >
-      <div style={{ 
+      <div style={{
         position: 'absolute',
-        width: '100%', 
-        height: '4px', 
+        width: '100%',
+        height: '4px',
         backgroundColor: color,
         borderTopRightRadius: isLeft ? '2px' : '0px',
         borderBottomRightRadius: isLeft ? '2px' : '0px',
@@ -78,7 +78,7 @@ const TrackToggle = ({ state, side, onClick }) => {
 
 export default function ConnectionTableModal({ layout, data, onClose, onSave }) {
   const [selectedStation, setSelectedStation] = useState('');
-  
+
   const [pendingConnections, setPendingConnections] = useState([]);
 
   useEffect(() => {
@@ -96,7 +96,7 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
     if (!selectedStation || !layout || !layout.sequence) return { leftBlockSection: null, rightBlockSection: null };
     const idx = layout.sequence.findIndex(s => s.code === selectedStation && s.type === 'station');
     if (idx === -1) return { leftBlockSection: null, rightBlockSection: null };
-    
+
     let leftBS = null;
     let rightBS = null;
     if (idx > 0 && layout.sequence[idx - 1].type === 'block') {
@@ -129,14 +129,14 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
     if (!bsCode) return null;
     const stnLineNum = parseFloat(stnLine.MANSEQNUMB) || parseFloat(stnLine.MAVLINENUMB);
     const bsLineNum = parseFloat(bsLine.MANSEQNUMB) || parseFloat(bsLine.MAVLINENUMB);
-    
+
     const conn = pendingConnections.find(c => {
       const matchStn = String(c.MAVSTTNCODE).trim() === stnCode;
       const matchBs = String(c.MAVBLCKSCTN).trim() === bsCode || String(c.MAVBLCKSCTN).trim() === bsCode.split('-').reverse().join('-');
-      
+
       const cStnLine = parseFloat(c.MANSTTNLINENUMB);
       const cBsLine = parseFloat(c.MANBSLINENUMB);
-      
+
       return matchStn && matchBs && cStnLine === stnLineNum && cBsLine === bsLineNum;
     });
 
@@ -160,12 +160,12 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
     let nextState = 'S'; // Default first click
 
     if (existingIndex !== -1) {
-       const currState = connsArray[existingIndex].MACRECVSENDFLAG;
-       if (currState === 'S') nextState = 'R';
-       else if (currState === 'R') nextState = 'B';
-       else nextState = null; // Disconnect directly after B
-       
-       connsArray.splice(existingIndex, 1);
+      const currState = connsArray[existingIndex].MACRECVSENDFLAG;
+      if (currState === 'S') nextState = 'R';
+      else if (currState === 'R') nextState = 'B';
+      else nextState = null; // Disconnect directly after B
+
+      connsArray.splice(existingIndex, 1);
     }
 
     if (nextState) {
@@ -194,7 +194,7 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
       display: 'flex', justifyContent: 'center', alignItems: 'center'
     }}>
       <div className="card glass" style={{ width: '1000px', maxWidth: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', backgroundColor: '#fff', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-        
+
         <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
           <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px' }}>Manage Connections</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>&times;</button>
@@ -204,8 +204,8 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
           <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', alignItems: 'flex-end' }}>
             <div style={{ flex: 1, maxWidth: '400px' }}>
               <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#475569' }}>Select Station</label>
-              <select 
-                value={selectedStation} 
+              <select
+                value={selectedStation}
                 onChange={e => setSelectedStation(e.target.value)}
                 style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px' }}
               >
@@ -230,7 +230,7 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
                     <tr>
                       {/* Left Block Section Headers */}
                       {leftBSLines.map((bLine, idx) => {
-                        const bLineName = bLine.MAVLINENUMB || bLine.MANSEQNUMB || `Line ${idx+1}`;
+                        const bLineName = bLine.MAVLINENUMB || bLine.MANSEQNUMB || `Line ${idx + 1}`;
                         return (
                           <th key={`lbs-header-${idx}`} style={{ padding: '12px', borderBottom: '2px solid #cbd5e1', borderRight: '1px dashed #e2e8f0', backgroundColor: '#fff7ed', color: '#c2410c', minWidth: '100px' }}>
                             <div style={{ fontSize: '11px', color: '#ea580c', fontWeight: '600', marginBottom: '4px' }}>{leftBlockSection}</div>
@@ -247,7 +247,7 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
 
                       {/* Right Block Section Headers */}
                       {rightBSLines.map((bLine, idx) => {
-                        const bLineName = bLine.MAVLINENUMB || bLine.MANSEQNUMB || `Line ${idx+1}`;
+                        const bLineName = bLine.MAVLINENUMB || bLine.MANSEQNUMB || `Line ${idx + 1}`;
                         return (
                           <th key={`rbs-header-${idx}`} style={{ padding: '12px', borderBottom: '2px solid #cbd5e1', borderRight: idx === rightBSLines.length - 1 ? 'none' : '1px dashed #e2e8f0', borderLeft: idx === 0 ? '2px solid #cbd5e1' : 'none', backgroundColor: '#eff6ff', color: '#1d4ed8', minWidth: '100px' }}>
                             <div style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600', marginBottom: '4px' }}>{rightBlockSection}</div>
@@ -257,21 +257,21 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
                       })}
                     </tr>
                   </thead>
-                  
+
                   <tbody>
                     {stationLines.length > 0 ? stationLines.map((sLine, sIdx) => {
-                      const sLineName = sLine.MAVLINENUMB || sLine.MANSEQNUMB || `Line ${sIdx+1}`;
+                      const sLineName = sLine.MAVLINENUMB || sLine.MANSEQNUMB || `Line ${sIdx + 1}`;
                       return (
                         <tr key={`stnLine-${sIdx}`} style={{ backgroundColor: '#fff' }}>
-                          
+
                           {/* Left Block Section Toggles */}
                           {leftBSLines.map((bLine, bIdx) => {
                             const state = getExistingConnectionState(selectedStation, sLine, leftBlockSection, bLine);
                             return (
                               <td key={`lCell-${bIdx}`} style={{ padding: '12px 8px', borderBottom: '1px solid #e2e8f0', borderRight: '1px dashed #e2e8f0', backgroundColor: '#fff' }}>
-                                <TrackToggle 
-                                  state={state} 
-                                  side="right" 
+                                <TrackToggle
+                                  state={state}
+                                  side="right"
                                   onClick={() => handleToggleConnection(selectedStation, sLine, leftBlockSection, bLine)}
                                 />
                               </td>
@@ -289,9 +289,9 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
                             const state = getExistingConnectionState(selectedStation, sLine, rightBlockSection, bLine);
                             return (
                               <td key={`rCell-${bIdx}`} style={{ padding: '12px 8px', borderBottom: '1px solid #e2e8f0', borderRight: bIdx === rightBSLines.length - 1 ? 'none' : '1px dashed #e2e8f0', backgroundColor: '#fff' }}>
-                                <TrackToggle 
-                                  state={state} 
-                                  side="left" 
+                                <TrackToggle
+                                  state={state}
+                                  side="left"
                                   onClick={() => handleToggleConnection(selectedStation, sLine, rightBlockSection, bLine)}
                                 />
                               </td>
@@ -311,13 +311,13 @@ export default function ConnectionTableModal({ layout, data, onClose, onSave }) 
                 </table>
               </div>
               <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                <button 
+                <button
                   onClick={onClose}
                   style={{ padding: '10px 20px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#fff', cursor: 'pointer', fontWeight: '500', color: '#475569' }}
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   onClick={handleApply}
                   className="btn-primary"
                   style={{ padding: '10px 24px', borderRadius: '6px', border: 'none', backgroundColor: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px -1px rgba(16, 185, 129, 0.2)' }}

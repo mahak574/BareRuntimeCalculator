@@ -1,4 +1,4 @@
- import React, { useState } from "react";
+import React, { useState } from "react";
 import TrainWiseTab from "./components/TrainWiseTab";
 import SectionWiseTab from "./components/SectionWiseTab";
 import DataTab from "./components/DataTab";
@@ -39,7 +39,7 @@ export default function App() {
             Data Hub
           </button>
         </div>
-        
+
         <div id="navbar-portal-target" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', paddingRight: '12px' }}></div>
 
         <button className="ghost icon-btn" onClick={reload} disabled={reloading} title="Clear Cache & Reload">

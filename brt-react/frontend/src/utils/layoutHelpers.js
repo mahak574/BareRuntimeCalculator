@@ -35,7 +35,7 @@ export const getBlockCodeBetween = (layout, stnA, stnB) => {
  */
 export const buildStationLineDirections = (layout) => {
   const directions = {};
-  
+
   if (!layout || !layout.sequence || !layout.connections) return directions;
 
   const mainLineCache = {};
@@ -68,7 +68,7 @@ export const buildStationLineDirections = (layout) => {
   });
 
   const mainLineColorsByIndex = {};
-const processedDirectionSources = new Set();
+  const processedDirectionSources = new Set();
 
   layout.connections.forEach(conn => {
     let bsCode = conn.MAVBLCKSCTN || '';
@@ -76,66 +76,66 @@ const processedDirectionSources = new Set();
       const reversed = String(bsCode).split('-').reverse().join('-');
       if (nodeIndexMap[reversed] !== undefined) bsCode = reversed;
     }
-    
+
     const stnIndex = nodeIndexMap[conn.MAVSTTNCODE];
     const bsIndex = nodeIndexMap[bsCode];
-    
+
     if (stnIndex !== undefined && bsIndex !== undefined) {
       const isSend = conn.MACRECVSENDFLAG === 'S';
       const isBidirectional = conn.MACRECVSENDFLAG === 'B';
       const isMSync = conn.MACRECVSENDFLAG === 'M_SYNC';
-      
+
       const isLeftToRight = (bsIndex > stnIndex && (isSend || isMSync)) || (bsIndex < stnIndex && !(isSend || isMSync));
-      
+
       const stn = layout.stations[conn.MAVSTTNCODE];
       let seqNum = parseInt(conn.MANSTTNLINENUMB);
       let actualStnLine = stn?.lines?.find(l => parseFloat(l.MANSEQNUMB) === seqNum);
       if (!actualStnLine) actualStnLine = stn?.lines?.find(l => String(l.MAVLINENUMB).trim() === String(conn.MANSTTNLINENUMB).trim());
-      
+
       if (actualStnLine) seqNum = parseFloat(actualStnLine.MANSEQNUMB);
-      
+
       const mLinesStn = getMainLinesForNode(conn.MAVSTTNCODE, 'station');
       const mainLineIndex = mLinesStn.findIndex(l => parseFloat(l.MANSEQNUMB) === seqNum);
-      
+
       if (mainLineIndex !== -1 && !isBidirectional && !isMSync && (isSend || isMSync)) {
-  const dedupKey = `${conn.MAVSTTNCODE}|${bsCode}|${seqNum}`;
-  if (processedDirectionSources.has(dedupKey)) {
-    // Skip duplicate processing for this station‑block‑mainLine combination
-    return;
-  }
-  processedDirectionSources.add(dedupKey);
+        const dedupKey = `${conn.MAVSTTNCODE}|${bsCode}|${seqNum}`;
+        if (processedDirectionSources.has(dedupKey)) {
+          // Skip duplicate processing for this station‑block‑mainLine combination
+          return;
+        }
+        processedDirectionSources.add(dedupKey);
 
         if (!mainLineColorsByIndex[conn.MAVSTTNCODE]) {
-           mainLineColorsByIndex[conn.MAVSTTNCODE] = {};
+          mainLineColorsByIndex[conn.MAVSTTNCODE] = {};
         }
-        
+
         const calcDir = isLeftToRight ? 'DOWN' : 'UP';
         const existingDir = mainLineColorsByIndex[conn.MAVSTTNCODE][mainLineIndex];
-        
+
         console.log('[DIRECTION SOURCE]', {
-            station: conn.MAVSTTNCODE,
-            connectionBlockSection: bsCode,
-            MANSTTNLINENUMB: conn.MANSTTNLINENUMB,
-            resolvedSeqNum: seqNum,
-            mainLineIndex: mainLineIndex,
-            MACRECVSENDFLAG: conn.MACRECVSENDFLAG,
-            bsIndex: bsIndex,
-            stnIndex: stnIndex,
-            isLeftToRight: isLeftToRight,
-            calculatedDirection: calcDir
+          station: conn.MAVSTTNCODE,
+          connectionBlockSection: bsCode,
+          MANSTTNLINENUMB: conn.MANSTTNLINENUMB,
+          resolvedSeqNum: seqNum,
+          mainLineIndex: mainLineIndex,
+          MACRECVSENDFLAG: conn.MACRECVSENDFLAG,
+          bsIndex: bsIndex,
+          stnIndex: stnIndex,
+          isLeftToRight: isLeftToRight,
+          calculatedDirection: calcDir
         });
 
         if (existingDir && existingDir !== calcDir) {
-            console.log('[DIRECTION OVERWRITE]', {
-                station: conn.MAVSTTNCODE,
-                mainLineIndex: mainLineIndex,
-                previousDirection: existingDir,
-                newDirection: calcDir,
-                sourceConnection: bsCode
-            });
-            console.log('[AMBIGUOUS LINE DIRECTION]');
+          console.log('[DIRECTION OVERWRITE]', {
+            station: conn.MAVSTTNCODE,
+            mainLineIndex: mainLineIndex,
+            previousDirection: existingDir,
+            newDirection: calcDir,
+            sourceConnection: bsCode
+          });
+          console.log('[AMBIGUOUS LINE DIRECTION]');
         }
-        
+
         mainLineColorsByIndex[conn.MAVSTTNCODE][mainLineIndex] = calcDir;
       }
     }
@@ -154,7 +154,7 @@ const processedDirectionSources = new Set();
       stn.lines.forEach(line => {
         const seqNum = parseFloat(line.MANSEQNUMB);
         const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseInt(seqNum));
-        
+
         let dir = 'BOTH';
         if (mainLineIndex !== -1 && mainLineColorsByIndex[stnCode] && mainLineColorsByIndex[stnCode][mainLineIndex]) {
           dir = mainLineColorsByIndex[stnCode][mainLineIndex];

@@ -42,7 +42,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
     lineData: null,
     data: null
   });
-  
+
   const [connectingState, setConnectingState] = useState(null);
 
   const handleLineClick = (e, type, lineData) => {
@@ -77,7 +77,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
     lineData: null
   });
 
-  
+
   const hoverTooltipTimeoutRef = useRef(null);
 
   const updateTooltipPosition = (clientX, clientY) => {
@@ -125,7 +125,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
       e.stopPropagation();
     }
     if (!lineData) return;
-    
+
     if (settingKey === 'signalling' && (type === 'block' || String(type).includes('block'))) {
       const code = lineData.bsCode || lineData.code;
       const val = value === 'Absolute' ? 'AB' : 'AUTO';
@@ -137,10 +137,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
     const key = getSettingsKey(type, lineData);
     if (!key) return;
-    
+
     setLineSettings(prev => {
       const current = prev[key] || {};
-      
+
       return {
         ...prev,
         [key]: {
@@ -156,7 +156,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
       const code = lineData.bsCode || lineData.code;
       const rawSig = String(layout?.blockSections?.[code]?.lines?.[0]?.MAVSIGNALLING || '').trim().toUpperCase();
       if (value === 'Auto') return rawSig === 'AUTO';
-      if (value === 'Absolute') return rawSig !== 'AUTO'; 
+      if (value === 'Absolute') return rawSig !== 'AUTO';
     }
 
     const key = getSettingsKey(type, lineData);
@@ -374,29 +374,30 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             {renderData.stationZones.map((z, i) => {
               const isHighlighted = highlightedStation === z.code;
               return (
-              <g key={`zone-${i}`} id={`station-zone-${z.code}`}  style={{ transition: 'all 0.3s ease' }}>
-                <rect 
-                  x={z.x} y={z.y} width={z.w} height={z.h} 
-                  fill={isHighlighted ? "#fef3c7" : "url(#stationBg)"} 
-                  rx="16" 
-                  stroke={isHighlighted ? "#f59e0b" : "#93c5fd"} 
-                  strokeWidth={isHighlighted ? "4" : "1.5"} 
-                  strokeOpacity="0.8" 
-                  style={{ transition: 'all 0.3s ease' }}
-                />
-                <path d={`M ${z.x + 16} ${z.y} L ${z.x + z.w - 16} ${z.y}`} stroke={isHighlighted ? "#d97706" : "#3b82f6"} strokeWidth="2" opacity="0.8" />
-                <text x={z.x + z.w / 2} y={z.y + 20} fill={isHighlighted ? "#92400e" : "#1e293b"} fontSize="16" fontWeight="800" textAnchor="middle" letterSpacing="1">
-                  {z.code} {z.macclassflag ? `(${z.macclassflag})` : ''} / {z.MAVDVSNCODE}
-                </text>
-                <rect x={z.x + z.w / 2 - 70} y={z.y + 26} width="140" height="20" rx="10" fill={isHighlighted ? "#fde68a" : "#f1f5f9"} stroke={isHighlighted ? "#f59e0b" : "#cbd5e1"} />
-                <text x={z.x + z.w / 2} y={z.y + 40} fill={isHighlighted ? "#92400e" : "#475569"} fontSize="10" fontWeight="bold" textAnchor="middle">
-                  {z.name}
-                </text>
-                <text x={z.x + z.w / 2} y={z.y + 56} fill={isHighlighted ? "#b45309" : "#64748b"} fontSize="10" fontWeight="500" textAnchor="middle">
-                  ({z.MANMILEPOSTKM_I}/{z.MANMILEPOSTSUBKM_I} {z.MAVREFSTTN_I})
-                </text>
-              </g>
-            )})}
+                <g key={`zone-${i}`} id={`station-zone-${z.code}`} style={{ transition: 'all 0.3s ease' }}>
+                  <rect
+                    x={z.x} y={z.y} width={z.w} height={z.h}
+                    fill={isHighlighted ? "#fef3c7" : "url(#stationBg)"}
+                    rx="16"
+                    stroke={isHighlighted ? "#f59e0b" : "#93c5fd"}
+                    strokeWidth={isHighlighted ? "4" : "1.5"}
+                    strokeOpacity="0.8"
+                    style={{ transition: 'all 0.3s ease' }}
+                  />
+                  <path d={`M ${z.x + 16} ${z.y} L ${z.x + z.w - 16} ${z.y}`} stroke={isHighlighted ? "#d97706" : "#3b82f6"} strokeWidth="2" opacity="0.8" />
+                  <text x={z.x + z.w / 2} y={z.y + 20} fill={isHighlighted ? "#92400e" : "#1e293b"} fontSize="16" fontWeight="800" textAnchor="middle" letterSpacing="1">
+                    {z.code} {z.macclassflag ? `(${z.macclassflag})` : ''} / {z.MAVDVSNCODE}
+                  </text>
+                  <rect x={z.x + z.w / 2 - 70} y={z.y + 26} width="140" height="20" rx="10" fill={isHighlighted ? "#fde68a" : "#f1f5f9"} stroke={isHighlighted ? "#f59e0b" : "#cbd5e1"} />
+                  <text x={z.x + z.w / 2} y={z.y + 40} fill={isHighlighted ? "#92400e" : "#475569"} fontSize="10" fontWeight="bold" textAnchor="middle">
+                    {z.name}
+                  </text>
+                  <text x={z.x + z.w / 2} y={z.y + 56} fill={isHighlighted ? "#b45309" : "#64748b"} fontSize="10" fontWeight="500" textAnchor="middle">
+                    ({z.MANMILEPOSTKM_I}/{z.MANMILEPOSTSUBKM_I} {z.MAVREFSTTN_I})
+                  </text>
+                </g>
+              )
+            })}
 
 
             {renderData.mainLineTracks.map((trk, i) => {
@@ -416,8 +417,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   ) : (
                     <>
                       <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={sleepersFill} strokeWidth={TRACK_LINE_WIDTH} opacity="0.9" />
-                      <line x1={trk.x1 - dx} y1={trk.y1 - dy} x2={trk.x2 - dx} y2={trk.y2 - dy} stroke={railFill} strokeWidth="1"  />
-                      <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1"  />
+                      <line x1={trk.x1 - dx} y1={trk.y1 - dy} x2={trk.x2 - dx} y2={trk.y2 - dy} stroke={railFill} strokeWidth="1" />
+                      <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1" />
                     </>
                   )}
                 </g>
@@ -425,7 +426,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             })}
 
             {renderData.stationLines.map((sl, i) => (
-              <g 
+              <g
                 key={`sl-${i}`}
                 pointerEvents="all"
                 onMouseEnter={(e) => showTooltip(e, 'station', sl)}
@@ -472,46 +473,46 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563eb' : '#475569';
               const solidFillLight = bl.trackColor === 'orange' ? '#fed7aa' : bl.trackColor === 'blue' ? '#bfdbfe' : '#cbd5e1';
               return (
-              <g 
-                key={`bl-${i}`}
-                pointerEvents="all"
-                onMouseEnter={(e) => showTooltip(e, 'block', bl)}
-                onMouseMove={(e) => {
-                  updateTooltipPosition(e.clientX, e.clientY);
-                  if (hoverTooltipTimeoutRef.current) clearTimeout(hoverTooltipTimeoutRef.current);
-                  hoverTooltipTimeoutRef.current = setTimeout(() => setHoverTooltip(prev => ({ ...prev, visible: false })), 5000);
-                }}
-                onMouseLeave={hideTooltip}
-                onClick={(e) => handleLineClick(e, 'block', bl)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                }}
-                style={{ cursor: connectingState ? 'crosshair' : 'pointer' }}
-              >
-                {connectingState?.lineData === bl && (
-                  <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke="#fcd34d" strokeWidth="28" opacity="0.8" />
-                )}
-                {isAutoSignalling ? (
-                  /* Auto Signalling: thinner sleepers + two rails, no drop-shadow filter */
-                  <>
-                    <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="0.8" />
-                    <line x1={bl.x1} y1={bl.y - 1} x2={bl.x2} y2={bl.y - 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                    <line x1={bl.x1} y1={bl.y + 1} x2={bl.x2} y2={bl.y + 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                  </>
-                ) : (
-                  /* Absolute Signalling: filled rect, no stroke border, no shadow */
-                  <rect
-                    x={bl.x1}
-                    y={bl.y - 5}
-                    width={bl.x2 - bl.x1}
-                    height={10}
-                    rx="2"
-                    fill={solidFillLight}
-                    opacity="0.92"
-                  />
-                )}
-              </g>
+                <g
+                  key={`bl-${i}`}
+                  pointerEvents="all"
+                  onMouseEnter={(e) => showTooltip(e, 'block', bl)}
+                  onMouseMove={(e) => {
+                    updateTooltipPosition(e.clientX, e.clientY);
+                    if (hoverTooltipTimeoutRef.current) clearTimeout(hoverTooltipTimeoutRef.current);
+                    hoverTooltipTimeoutRef.current = setTimeout(() => setHoverTooltip(prev => ({ ...prev, visible: false })), 5000);
+                  }}
+                  onMouseLeave={hideTooltip}
+                  onClick={(e) => handleLineClick(e, 'block', bl)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                  style={{ cursor: connectingState ? 'crosshair' : 'pointer' }}
+                >
+                  {connectingState?.lineData === bl && (
+                    <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke="#fcd34d" strokeWidth="28" opacity="0.8" />
+                  )}
+                  {isAutoSignalling ? (
+                    /* Auto Signalling: thinner sleepers + two rails, no drop-shadow filter */
+                    <>
+                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="0.8" />
+                      <line x1={bl.x1} y1={bl.y - 1} x2={bl.x2} y2={bl.y - 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                      <line x1={bl.x1} y1={bl.y + 1} x2={bl.x2} y2={bl.y + 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                    </>
+                  ) : (
+                    /* Absolute Signalling: filled rect, no stroke border, no shadow */
+                    <rect
+                      x={bl.x1}
+                      y={bl.y - 5}
+                      width={bl.x2 - bl.x1}
+                      height={10}
+                      rx="2"
+                      fill={solidFillLight}
+                      opacity="0.92"
+                    />
+                  )}
+                </g>
               );
             })}
 
@@ -527,7 +528,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               }
 
               return (
-                <g 
+                <g
                   key={`conn-${i}`}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
@@ -580,7 +581,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   width={Math.max(0, pf.w - 4)}
                   height={2.5}
                   fill="#fbbf24"
-                  
+
                 />
                 <rect x={pf.x + pf.w - 45} y={pf.y + pf.h / 2 - 7} width="40" height="14" fill="#ffffff" rx="7" stroke="#f59e0b" strokeWidth="1.5" />
                 <text x={pf.x + pf.w - 25} y={pf.y + pf.h / 2 + 4} fill="#b45309" fontSize="11" fontWeight="900" textAnchor="middle">{pf.label}</text>
@@ -588,9 +589,9 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             ))}
 
             {renderData.stationLines.map((sl, i) => (
-              <g 
-                key={`sl-lbl-${i}`} 
-                
+              <g
+                key={`sl-lbl-${i}`}
+
                 pointerEvents="all"
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -598,13 +599,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 }}
               >
                 <rect x={(sl.x1 + sl.x2) / 2 - 28} y={sl.y - 8} width="56" height="16" rx="8" fill={sl.trackColor === 'orange' ? "#fff7ed" : sl.trackColor === 'blue' ? "#eff6ff" : "#ffffff"} stroke={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563eb" : "#cbd5e1"} strokeWidth="1" />
-                <text x={(sl.x1 + sl.x2) / 2} y={sl.y + 4} fill={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{pointerEvents: 'none'}}>{sl.label}</text>
+                <text x={(sl.x1 + sl.x2) / 2} y={sl.y + 4} fill={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{sl.label}</text>
               </g>
             ))}
             {renderData.blockLines.map((bl, i) => (
-              <g 
-                key={`bl-lbl-${i}`} 
-                
+              <g
+                key={`bl-lbl-${i}`}
+
                 pointerEvents="all"
                 onContextMenu={(e) => {
                   e.preventDefault();
@@ -613,13 +614,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 style={{ cursor: 'default' }}
               >
                 <rect x={(bl.x1 + bl.x2) / 2 - 28} y={bl.y - 8} width="56" height="16" rx="8" fill={bl.trackColor === 'orange' ? "#fff7ed" : bl.trackColor === 'blue' ? "#eff6ff" : "#ffffff"} stroke={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563eb" : "#cbd5e1"} strokeWidth="1" />
-                <text x={(bl.x1 + bl.x2) / 2} y={bl.y + 4} fill={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{pointerEvents: 'none'}}>{bl.label}</text>
+                <text x={(bl.x1 + bl.x2) / 2} y={bl.y + 4} fill={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{bl.label}</text>
               </g>
             ))}
 
             {renderData.labels.map((lb, i) => (
-              <g 
-                key={`lb-${i}`} 
+              <g
+                key={`lb-${i}`}
                 filter={lb.isStation ? "url(#glow)" : undefined}
                 pointerEvents="all"
                 onContextMenu={(e) => {
@@ -647,7 +648,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
       {/* Minimap logic removed */}
 
       {contextMenu.visible && (
-        <div 
+        <div
           style={{
             position: 'fixed',
             top: contextMenu.y,
@@ -669,16 +670,16 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             .ctx-menu-item:hover .ctx-submenu { display: block !important; }
           `}</style>
           <div style={{ padding: '4px 16px', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', fontWeight: 'bold', color: '#64748b', fontSize: '12px' }}>
-            {contextMenu.type.includes('name') ? 
+            {contextMenu.type.includes('name') ?
               (contextMenu.type === 'block-name' ? `Block Section: ${contextMenu.data?.text || contextMenu.data?.code}` : `Station: ${contextMenu.data?.name || contextMenu.data?.code}`)
-              : 
+              :
               `${contextMenu.type.includes('block') ? 'Block Section Line' : 'Station Line'} ${contextMenu.lineData?.label}`
             }
           </div>
-          
+
           {contextMenu.type === 'block' && (
             <>
-              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('block', 'delete', contextMenu.lineData); setContextMenu({...contextMenu, visible: false}); }}>
+              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('block', 'delete', contextMenu.lineData); setContextMenu({ ...contextMenu, visible: false }); }}>
                 Delete Main Line
               </div>
             </>
@@ -688,13 +689,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             <>
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: '500' }} className="ctx-menu-hover">
-                  Add Main Line <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Add Main Line <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { 
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter Block Section Line Name:");
                     if (name) {
                       const lines = layout.blockSections[contextMenu.data?.code]?.lines || [];
@@ -702,12 +703,12 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Duplicate name. This line already exists.");
                       } else {
-                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, {position: 'top', direction: 'BOTH', lineName: name}); 
+                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, { position: 'top', direction: 'BOTH', lineName: name });
                       }
                     }
-                    setContextMenu({...contextMenu, visible: false}); 
+                    setContextMenu({ ...contextMenu, visible: false });
                   }}>Top</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { 
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter Block Section Line Name:");
                     if (name) {
                       const lines = layout.blockSections[contextMenu.data?.code]?.lines || [];
@@ -715,26 +716,26 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Duplicate name. This line already exists.");
                       } else {
-                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, {position: 'bottom', direction: 'BOTH', lineName: name}); 
+                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, { position: 'bottom', direction: 'BOTH', lineName: name });
                       }
                     }
-                    setContextMenu({...contextMenu, visible: false}); 
+                    setContextMenu({ ...contextMenu, visible: false });
                   }}>Bottom</div>
                 </div>
               </div>
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} className="ctx-menu-hover">
-                  Signalling <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Signalling <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
-                  {[{label: 'Absolute', val: 'AB'}, {label: 'Auto', val: 'AUTO'}].map(sig => (
+                  {[{ label: 'Absolute', val: 'AB' }, { label: 'Auto', val: 'AUTO' }].map(sig => (
                     <div key={sig.val} style={{ padding: '6px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => {
                       if (onModifyLayout) onModifyLayout('block', 'signalling', contextMenu.data?.code, { signalling: sig.val });
-                      setContextMenu({...contextMenu, visible: false});
+                      setContextMenu({ ...contextMenu, visible: false });
                       e.stopPropagation();
                     }}>
                       <span>{sig.label}</span>
@@ -746,16 +747,16 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} className="ctx-menu-hover">
-                  Speed <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Speed <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none', maxHeight: '200px', overflowY: 'auto'
                 }}>
                   {[30, 45, 50, 60, 75, 90, 100, 110, 130, 160].map(s => (
                     <div key={s} style={{ padding: '6px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => {
                       if (onModifyLayout) onModifyLayout('block', 'speed', contextMenu.data, { speed: s });
-                      setContextMenu({...contextMenu, visible: false});
+                      setContextMenu({ ...contextMenu, visible: false });
                       e.stopPropagation();
                     }}>
                       <span>{s} kmph</span>
@@ -767,23 +768,23 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#dc2626', fontWeight: '500' }} className="ctx-menu-hover">
-                  Delete Main Lines <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Delete Main Lines <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '160px', display: 'none'
                 }}>
                   {(layout.blockSections[contextMenu.data?.code]?.lines || []).map((line, idx) => {
                     const label = line.MAVLINENUMB || line.MANSEQNUMB;
-                    
+
                     return (
-                      <div key={idx} style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('block', 'delete', { originalLine: line, code: contextMenu.data.code }); setContextMenu({...contextMenu, visible: false}); }}>
+                      <div key={idx} style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('block', 'delete', { originalLine: line, code: contextMenu.data.code }); setContextMenu({ ...contextMenu, visible: false }); }}>
                         {label}
                       </div>
                     );
                   })}
                   {(layout.blockSections[contextMenu.data?.code]?.lines || []).length === 0 && (
-                     <div style={{ padding: '6px 16px', color: '#94a3b8', fontStyle: 'italic', fontSize: '11px' }}>No lines</div>
+                    <div style={{ padding: '6px 16px', color: '#94a3b8', fontStyle: 'italic', fontSize: '11px' }}>No lines</div>
                   )}
                 </div>
               </div>
@@ -795,10 +796,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             <>
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} className="ctx-menu-hover">
-                  Signalling <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Signalling <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
                   <div style={{ padding: '6px 16px', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '4px' }} className="ctx-menu-hover" onClick={(e) => toggleSetting(contextMenu.type, contextMenu.lineData, 'signalling', 'Absolute', e)}>
@@ -819,10 +820,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} className="ctx-menu-hover">
-                  Speed <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Speed <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
                   {[60, 90, 100, 110, 130, 160].map(s => (
@@ -830,7 +831,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (onModifyLayout) {
                         onModifyLayout(contextMenu.type.includes('block') ? 'block' : 'station', 'loopspeed', contextMenu.lineData, { speed: s });
                       }
-                      setContextMenu({...contextMenu, visible: false});
+                      setContextMenu({ ...contextMenu, visible: false });
                       e.stopPropagation();
                     }}>
                       <span>{s} kmph</span>
@@ -846,10 +847,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             <>
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: '500' }} className="ctx-menu-hover">
-                  Add Platform <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Add Platform <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
                   {(() => {
@@ -858,11 +859,11 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                     const pfs = layout.stations[stnCode]?.platforms?.filter(p => parseFloat(p.MANSEQNUMB) === seqNum) || [];
                     const upPfs = pfs.filter(p => p.MAVPFVPOSITION === 'U');
                     const downPfs = pfs.filter(p => p.MAVPFVPOSITION === 'D');
-                    
+
                     const renderDirOptions = (vPos, label, existingPfs, isFirst) => {
                       const count = existingPfs.length;
                       if (count >= 3) return null; // Max platforms reached for this side
-                      
+
                       const allStationPfs = layout.stations[stnCode]?.platforms || [];
                       const handleAdd = (hPos, promptText, e) => {
                         const name = window.prompt(promptText);
@@ -874,7 +875,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                             if (onModifyLayout) onModifyLayout('station', 'add-platform', contextMenu.lineData, { vPos: vPos === 'Up' ? 'U' : 'D', hPos, platformName: name });
                           }
                         }
-                        setContextMenu({...contextMenu, visible: false});
+                        setContextMenu({ ...contextMenu, visible: false });
                         e.stopPropagation();
                       };
 
@@ -903,7 +904,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                           <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={(e) => handleAdd('M', `Enter name for Middle platform:`, e)}>Middle</div>
                         );
                       }
-                      
+
                       return (
                         <>
                           {header}
@@ -927,32 +928,32 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#dc2626', fontWeight: '500' }} className="ctx-menu-hover">
-                  Delete Platform <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Delete Platform <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
                   {(() => {
                     const stnCode = contextMenu.data?.code;
                     const seqNum = parseFloat(contextMenu.lineData?.originalLine?.MANSEQNUMB);
                     const pfs = layout.stations[stnCode]?.platforms?.filter(p => parseFloat(p.MANSEQNUMB) === seqNum) || [];
-                    
+
                     if (pfs.length === 0) {
                       return <div style={{ padding: '6px 16px', color: '#94a3b8', fontStyle: 'italic', fontSize: '11px' }}>No platforms</div>;
                     }
-                    
+
                     return pfs.map((pf, idx) => {
                       const posLabel = pf.MAVPFVPOSITION === 'U' ? 'Up' : 'Down';
                       const hPosLabel = pf.MAVPFHPOSITION === 'L' ? 'Left' : (pf.MAVPFHPOSITION === 'R' ? 'Right' : 'Middle');
                       return (
-                        <div key={idx} style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => { 
+                        <div key={idx} style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => {
                           if (onModifyLayout) onModifyLayout('station', 'delete-platform', contextMenu.lineData, { platform: pf });
-                          setContextMenu({...contextMenu, visible: false}); 
+                          setContextMenu({ ...contextMenu, visible: false });
                           e.stopPropagation();
                         }}>
                           <span>{pf.MAVPLATFORMNUMB}</span>
-                          <span style={{fontSize: '10px', color: '#94a3b8'}}>{posLabel} {hPosLabel}</span>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>{posLabel} {hPosLabel}</span>
                         </div>
                       );
                     });
@@ -962,13 +963,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: '500' }} className="ctx-menu-hover">
-                  Add Station Line <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Add Station Line <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { 
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter the name for the new station line:");
                     if (name) {
                       const stnCode = contextMenu.data?.code;
@@ -977,12 +978,12 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Already exists and choose another");
                       } else {
-                        if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.lineData, {position: 'up', direction: 'BOTH', lineName: name, targetSeq: contextMenu.lineData?.originalLine?.MANSEQNUMB}); 
+                        if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.lineData, { position: 'up', direction: 'BOTH', lineName: name, targetSeq: contextMenu.lineData?.originalLine?.MANSEQNUMB });
                       }
                     }
-                    setContextMenu({...contextMenu, visible: false}); 
+                    setContextMenu({ ...contextMenu, visible: false });
                   }}>Up</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { 
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter the name for the new station line:");
                     if (name) {
                       const stnCode = contextMenu.data?.code;
@@ -991,24 +992,24 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Already exists and choose another");
                       } else {
-                        if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.lineData, {position: 'down', direction: 'BOTH', lineName: name, targetSeq: contextMenu.lineData?.originalLine?.MANSEQNUMB}); 
+                        if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.lineData, { position: 'down', direction: 'BOTH', lineName: name, targetSeq: contextMenu.lineData?.originalLine?.MANSEQNUMB });
                       }
                     }
-                    setContextMenu({...contextMenu, visible: false}); 
+                    setContextMenu({ ...contextMenu, visible: false });
                   }}>Down</div>
                 </div>
               </div>
 
-              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'delete', contextMenu.lineData); setContextMenu({...contextMenu, visible: false}); }}>
+              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'delete', contextMenu.lineData); setContextMenu({ ...contextMenu, visible: false }); }}>
                 Delete Loop Line
               </div>
 
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }} className="ctx-menu-hover">
-                  Speed <span style={{fontSize: '10px', marginTop: '2px'}}>▼</span>
+                  Speed <span style={{ fontSize: '10px', marginTop: '2px' }}>▼</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
                   {(() => {
@@ -1029,7 +1030,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                         {speeds.map(s => (
                           <div key={s} style={{ padding: '6px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => {
                             if (onModifyLayout) onModifyLayout('station', 'speed', contextMenu.lineData, { speed: s, isMain: isMain });
-                            setContextMenu({...contextMenu, visible: false});
+                            setContextMenu({ ...contextMenu, visible: false });
                             e.stopPropagation();
                           }}>
                             <span>{s} kmph</span>
@@ -1046,7 +1047,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
           {contextMenu.type === 'station' && (
             <>
-              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'delete', contextMenu.lineData); setContextMenu({...contextMenu, visible: false}); }}>
+              <div style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'delete', contextMenu.lineData); setContextMenu({ ...contextMenu, visible: false }); }}>
                 Delete Loop Line
               </div>
             </>
@@ -1056,21 +1057,21 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             <>
               <div className="ctx-menu-item" style={{ position: 'relative' }}>
                 <div style={{ padding: '8px 16px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', color: '#16a34a', fontWeight: '500' }} className="ctx-menu-hover">
-                  Add Loop Line <span style={{fontSize: '10px', marginTop: '2px'}}>▶</span>
+                  Add Loop Line <span style={{ fontSize: '10px', marginTop: '2px' }}>▶</span>
                 </div>
                 <div className="ctx-submenu" style={{
-                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff', 
+                  position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '160px', display: 'none'
                 }}>
                   <div style={{ padding: '4px 16px', fontWeight: 'bold', fontSize: '11px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '4px' }}>Add at Top</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'top', direction: 'UP'}); setContextMenu({...contextMenu, visible: false}); }}>UP</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'top', direction: 'DN'}); setContextMenu({...contextMenu, visible: false}); }}>DOWN</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'top', direction: 'BOTH'}); setContextMenu({...contextMenu, visible: false}); }}>BOTH</div>
-                  
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>UP</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>DOWN</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'BOTH' }); setContextMenu({ ...contextMenu, visible: false }); }}>BOTH</div>
+
                   <div style={{ padding: '4px 16px', fontWeight: 'bold', fontSize: '11px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', marginTop: '8px' }}>Add at Bottom</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'bottom', direction: 'UP'}); setContextMenu({...contextMenu, visible: false}); }}>UP</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'bottom', direction: 'DN'}); setContextMenu({...contextMenu, visible: false}); }}>DOWN</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if(onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, {position: 'bottom', direction: 'BOTH'}); setContextMenu({...contextMenu, visible: false}); }}>BOTH</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>UP</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>DOWN</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'BOTH' }); setContextMenu({ ...contextMenu, visible: false }); }}>BOTH</div>
                 </div>
               </div>
             </>
@@ -1080,7 +1081,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
       )}
       {hoverTooltip.visible && hoverTooltip.lineData && (
         <div ref={tooltipRef}
-          style={{ position: 'fixed', top: 0, left: 0,
+          style={{
+            position: 'fixed', top: 0, left: 0,
             backgroundColor: '#ffffff',
             boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
             borderRadius: '6px',
@@ -1097,14 +1099,14 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             const isBlock = hoverTooltip.type === 'block';
             const title = isBlock ? hoverTooltip.lineData.bsCode : hoverTooltip.lineData.stnCode;
             const lineName = hoverTooltip.lineData.label;
-            
+
             if (isBlock) {
               const dynLine = layout?.blockSections?.[title]?.lines?.find(l => parseFloat(l.MANSEQNUMB) === hoverTooltip.lineData.seq) || hoverTooltip.lineData.originalLine || {};
               const sigRaw = String(dynLine.MAVSIGNALLING || 'None').trim();
               let sig = sigRaw || 'None';
               if (sigRaw.toUpperCase() === 'AB') sig = 'Absolute';
               if (sigRaw.toUpperCase() === 'AUTO') sig = 'Automatic';
-              
+
               const spd = String(dynLine.MAVSPEED || 'None').trim();
               const spdStr = spd !== 'None' ? `${spd} kmph` : 'None';
               return (
@@ -1118,7 +1120,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               const dynLine = layout?.stations?.[title]?.lines?.find(l => parseFloat(l.MANSEQNUMB) === hoverTooltip.lineData.seq) || hoverTooltip.lineData.originalLine || {};
               const spd = String(dynLine.MAVSPEED || 'None').trim();
               const spdStr = spd !== 'None' ? `${spd} kmph` : 'None';
-              
+
               return (
                 <>
                   <div style={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '4px' }}>{title} ({lineName})</div>
@@ -1216,7 +1218,7 @@ function generateRenderData(layout) {
     }
     mLines.sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
     const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseInt(seqNum));
-    
+
     // Check adjacent stations to infer block direction if possible, else fallback
     if (mainLineIndex === 0) return 'blue';
     if (mainLineIndex === 1) return 'orange';
@@ -1249,19 +1251,19 @@ function generateRenderData(layout) {
       const mLines = getMainLinesForNode(node.code, node.type);
       if (mLines.length > 0) {
         let anchorLine = mLines.find(l => {
-           const seqNum = parseFloat(l.MANSEQNUMB);
-           if (node.type === 'station') {
-              return layout.connections.some(c => c.MAVSTTNCODE === node.code && parseFloat(c.MANSTTNLINENUMB) === seqNum);
-           } else {
-              return layout.connections.some(c => {
-                 let cBs = c.MAVBLCKSCTN || '';
-                 if (nodeIndexMap[cBs] === undefined) {
-                    const reversed = String(cBs).split('-').reverse().join('-');
-                    if (nodeIndexMap[reversed] !== undefined) cBs = reversed;
-                 }
-                 return cBs === node.code && parseFloat(c.MANBSLINENUMB) === seqNum;
-              });
-           }
+          const seqNum = parseFloat(l.MANSEQNUMB);
+          if (node.type === 'station') {
+            return layout.connections.some(c => c.MAVSTTNCODE === node.code && parseFloat(c.MANSTTNLINENUMB) === seqNum);
+          } else {
+            return layout.connections.some(c => {
+              let cBs = c.MAVBLCKSCTN || '';
+              if (nodeIndexMap[cBs] === undefined) {
+                const reversed = String(cBs).split('-').reverse().join('-');
+                if (nodeIndexMap[reversed] !== undefined) cBs = reversed;
+              }
+              return cBs === node.code && parseFloat(c.MANBSLINENUMB) === seqNum;
+            });
+          }
         });
         if (!anchorLine) anchorLine = mLines[0];
         mainLineIndex = nodeLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseFloat(anchorLine.MANSEQNUMB));
@@ -1321,7 +1323,7 @@ function generateRenderData(layout) {
         const lineNumb = line.MAVLINENUMB || seqNum;
 
         const trackColor = getLineColor(line, stnCode, 'station', seqNum);
-        
+
         data.stationLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, category: line.MACLINECATEGORY, lineIndex: line.lineIndex, trackColor, originalLine: line, stnCode, adjacentBsCode });
         lineEnds[`${stnCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
         lineEnds[`${stnCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
@@ -1392,7 +1394,7 @@ function generateRenderData(layout) {
       const idx = layout.sequence.indexOf(node);
       const prevNode = idx > 0 ? layout.sequence[idx - 1] : null;
       const nextNode = idx < layout.sequence.length - 1 ? layout.sequence[idx + 1] : null;
-      
+
       let adjTopY = topY;
       if (prevNode && prevNode.type === 'station') {
         const pStn = layout.stations[prevNode.code];
@@ -1561,7 +1563,7 @@ function generateRenderData(layout) {
 
         let connectionColor = (isLeftToRight ? '#2563eb' : '#ea580c');
         if (isBidirectional || isMSync) {
-            connectionColor = '#10b981'; // Green for sync
+          connectionColor = '#10b981'; // Green for sync
         }
 
         data.connections.push({
@@ -1617,8 +1619,8 @@ function generateRenderData(layout) {
 
     const maxLen = Math.max(linesA.length, linesB.length);
     for (let j = 0; j < maxLen; j++) {
-      const la = linesA[j]; 
-      const lb = linesB[j]; 
+      const la = linesA[j];
+      const lb = linesB[j];
       if (!la || !lb) continue;
 
       const leA = lineEnds[`${node.code}-SEQ-${parseFloat(la.MANSEQNUMB)}`];
@@ -1716,7 +1718,7 @@ function generateRenderData(layout) {
       const path = `M ${startX} ${startY} L ${midX} ${midY} L ${endX} ${endY}`;
 
       data.connections.push({
-        rawConn: {}, 
+        rawConn: {},
         path,
         startX, startY, endX, endY,
         color: '#ea580c',
