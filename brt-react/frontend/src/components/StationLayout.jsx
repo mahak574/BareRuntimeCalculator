@@ -1731,8 +1731,8 @@ function generateRenderData(layout) {
     }
   };
 
-  addManualConnection('SGAC', 3, 'CDSL', 2);
-  addManualConnection('CDSL', 2, 'DXD', 3);
+  addManualConnection('DXD', 3, 'CDSL', 2);
+  addManualConnection('CDSL', 2, 'SGAC', 3);
 
   return data;
 }

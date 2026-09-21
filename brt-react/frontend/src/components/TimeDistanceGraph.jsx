@@ -784,7 +784,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 }}>
                   Export CSV
                 </button>
-                <button onClick={() => { setSimulatedPaths([]); setSelectedTrain(null); }} style={{
+                <button onClick={() => { setSimulatedPaths([]); setSelectedTrain(null); setShowSimStatsModal(false); setShowJourneyTimeModal(false); setShowDetentionSummaryModal(false); }} style={{
                   padding: '6px 12px',
                   background: '#ef4444',
                   color: 'white',
@@ -797,34 +797,34 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 }}>
                   Clear Sims
                 </button>
+                <button onClick={() => setShowJourneyTimeModal(true)} style={{
+                  padding: '6px 12px',
+                  background: '#8b5cf6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Journey Time
+                </button>
+                <button onClick={() => setShowDetentionSummaryModal(true)} style={{
+                  padding: '6px 12px',
+                  background: '#0891b2',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '5px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap'
+                }}>
+                  Detention Summary
+                </button>
               </>
             )}
-            <button onClick={() => setShowJourneyTimeModal(true)} style={{
-              padding: '6px 12px',
-              background: '#8b5cf6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '12px',
-              whiteSpace: 'nowrap'
-            }}>
-              Journey Time
-            </button>
-            <button onClick={() => setShowDetentionSummaryModal(true)} style={{
-              padding: '6px 12px',
-              background: '#0891b2',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              fontSize: '12px',
-              whiteSpace: 'nowrap'
-            }}>
-              Detention Summary
-            </button>
           </div>
         </div>
       </div>
@@ -959,6 +959,143 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 })()}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Journey Time Modal */}
+      {showJourneyTimeModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', width: '650px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Journey Time (Hourly Paths)</h3>
+              <button onClick={() => setShowJourneyTimeModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>×</button>
+            </div>
+
+            {(() => {
+              const HOURLY_BUCKETS = [
+                '0-1', '1-2', '2-3', '3-4', '4-5', '5-6',
+                '6-7', '7-8', '8-9', '9-10', '10-11', '11-12',
+                '12-13', '13-14', '14-15', '15-16', '16-17', '17-18',
+                '18-19', '19-20', '20-21', '21-22', '22-23', '23-00'
+              ];
+
+              const fwdJourneyCounts = Array(24).fill(0);
+              const bwdJourneyCounts = Array(24).fill(0);
+
+              simulatedPaths.forEach(p => {
+                if (p.stops && p.stops.length > 0) {
+                  const start = p.stops[0];
+                  let depMins = start.absDepMins;
+                  if (depMins === undefined) {
+                    depMins = (start.depTime || 0) * 60;
+                  }
+
+                  let hourIdx = Math.floor((depMins / 60) % 24);
+                  if (hourIdx < 0) hourIdx += 24;
+                  if (hourIdx < 0) hourIdx = 0;
+                  if (hourIdx > 23) hourIdx = 23;
+
+                  if (p.isForward) {
+                    fwdJourneyCounts[hourIdx]++;
+                  } else {
+                    bwdJourneyCounts[hourIdx]++;
+                  }
+                }
+              });
+
+              const fwdLabel = `${graphData?.layoutStations?.[0]?.code || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'}`;
+              const bwdLabel = `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'} → ${graphData?.layoutStations?.[0]?.code || 'KOTA'}`;
+
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9' }}>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>Hours</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{fwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{bwdLabel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {HOURLY_BUCKETS.map((bucket, idx) => (
+                      <tr key={`jt-${bucket}`} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>{bucket}</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{fwdJourneyCounts[idx]}</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{bwdJourneyCounts[idx]}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Detention Summary Modal */}
+      {showDetentionSummaryModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', width: '650px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Detention Summary</h3>
+              <button onClick={() => setShowDetentionSummaryModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>×</button>
+            </div>
+
+            {(() => {
+              const stationsList = (graphData && graphData.layoutStations) ? graphData.layoutStations : [];
+
+              const fwdStationDetention = {};
+              const bwdStationDetention = {};
+
+              stationsList.forEach(stn => {
+                const code = stn.code || stn.name;
+                fwdStationDetention[code] = 0;
+                bwdStationDetention[code] = 0;
+              });
+
+              simulatedPaths.forEach(p => {
+                if (p.stops && p.stops.length > 0) {
+                  p.stops.forEach(stop => {
+                    const stnCode = stop.station;
+                    const detMins = Number(stop.detentionMinutes) || 0;
+                    if (p.isForward) {
+                      fwdStationDetention[stnCode] = (fwdStationDetention[stnCode] || 0) + detMins;
+                    } else {
+                      bwdStationDetention[stnCode] = (bwdStationDetention[stnCode] || 0) + detMins;
+                    }
+                  });
+                }
+              });
+
+              const fwdLabel = `${graphData?.layoutStations?.[0]?.code || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'}`;
+              const bwdLabel = `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'} → ${graphData?.layoutStations?.[0]?.code || 'KOTA'}`;
+
+              return (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9' }}>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>Stations</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{fwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{bwdLabel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stationsList.map((stn, idx) => {
+                      const code = stn.code || stn.name;
+                      const fwdDet = Math.round(fwdStationDetention[code] || 0);
+                      const bwdDet = Math.round(bwdStationDetention[code] || 0);
+                      return (
+                        <tr key={`det-${code}-${idx}`} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>{code}</td>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{`${fwdDet} min`}</td>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{`${bwdDet} min`}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
         </div>
       )}
