@@ -515,7 +515,9 @@ export async function runSimulation({
       if (i < 0) return null;
       if (i >= n - 1) {
         const path = [];
-        for (let k = 0; k < n - 1; k++) path.push(hopResult[k]);
+        for (let k = 0; k < n - 1; k++) {
+          path.push(hopResult[k]);
+        }
         return { path, totalWaitMins, detentionCount };
       }
       const block = blockData[i];
@@ -707,6 +709,13 @@ export async function runSimulation({
           departAttempt[i] += 1;
           if (i > 0) totalWaitMins += 1;
           const waitedHere = departAttempt[i] - waitStartedAt[i];
+          if (
+            waitedHere === 1 &&
+            i > 0 &&
+            !detainedStations.has(block.stn1.code)
+          ) {
+            detentionCount++;
+          }
 
           // BACKTRACK LOGIC FOR UNEXPECTED DETENTION DECELERATION:
           // If we just got detained (waitedHere === 1) at a pass-through station (halt === 0),

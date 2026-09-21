@@ -1,312 +1,339 @@
 import Papa from 'papaparse';
-
+import kotaCsvUrl from '../data/KOTA-APR-MAY-26.csv?url';
+import bspCsvUrl from '../data/BSP-APR-MAY-26.csv?url';
 function parseCsvUrl(url) {
-  return new Promise((resolve, reject) => {
-    Papa.parse(url, {
-      download: true,
-      header: true,
-      skipEmptyLines: true,
-      transformHeader: (header) => header.replace(/"/g, '').trim().toLowerCase(),
-      transform: (val) => {
-        if (typeof val === 'string') return val.replace(/"/g, '').trim();
-        return val;
-      },
-      complete: (results) => {
-        resolve(results.data);
-      },
-      error: (err) => {
-        reject(err);
+  return new Promise(async (resolve, reject) => {
+    console.log('[GoodsSpeed DEBUG] CSV REQUEST START', url);
+    console.log('[GoodsSpeed DEBUG] CSV PARSE CONFIG URL', url);
+
+    let text = '';
+    try {
+      const response = await fetch(url);
+      console.log('[GoodsSpeed DEBUG] FETCH STATUS', url, response.status);
+      console.log('[GoodsSpeed DEBUG] FETCH CONTENT-TYPE', url, response.headers.get('content-type'));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    });
+      console.log('[GoodsSpeed DEBUG] BODY STREAM', {
+        url,
+        hasBody: !!response.body,
+        bodyUsed: response.bodyUsed
+      });
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('CSV response body is not readable');
+      }
+
+      const { value, done } = await reader.read();
+      console.log('[GoodsSpeed DEBUG] FIRST CHUNK', {
+        url,
+        done,
+        bytes: value?.byteLength || 0
+      });
+
+      reader.releaseLock();
+
+      // Do not parse anything, just resolve with empty array to satisfy UI type
+      resolve([]);
+    } catch (err) {
+      console.error('[GoodsSpeed DEBUG] FETCH FAILED', url, err);
+      return reject(err);
+    }
   });
+}
+
+/**
+ * Build physical sections directly from layout.sequence block nodes.
+ *
+ * The layout.sequence alternates: station → block → station → block → ...
+ * Each block node has a `code` (the block section name from RouteInfo, e.g.
+ * "ATH-BJK") and a `distance` property (km from RouteInfo DISTANCE column).
+ *
+ * IMPORTANT: We use node.distance directly as sectionDistanceKm.
+ * We do NOT derive distances from MANMILEPOSTKM_I / MANMILEPOSTSUBKM_I because
+ * those are absolute Indian Railways mileposts from different origins and
+ * cannot be differenced across stations to obtain a reliable section distance.
+ *
+ * Returns an array of:
+ * {
+ *   BLOCK_SECTION_CODE: string,   // canonical code, e.g. "ATH-BJK"
+ *   DISTANCE_KM:        number,   // from RouteInfo DISTANCE column
+ *   FROM_STATION:       string,
+ *   TO_STATION:         string,
+ * }
+ */
+function buildPhysicalSections(layout) {
+  const physicalSections = [];
+  if (!layout || !layout.sequence) return physicalSections;
+
+  let prevStn = null;
+  let prevBlock = null;
+
+  for (let i = 0; i < layout.sequence.length; i++) {
+    const node = layout.sequence[i];
+    if (node.type === 'station') {
+      if (prevStn && prevBlock) {
+        const fromCode = prevStn.code.trim().toUpperCase();
+        const toCode = node.code.trim().toUpperCase();
+        // Use the distance already stored on the block node (from RouteInfo).
+        const distKm = parseFloat(prevBlock.distance) || 0;
+        physicalSections.push({
+          BLOCK_SECTION_CODE: prevBlock.code.trim().toUpperCase(),
+          DISTANCE_KM: distKm,
+          FROM_STATION: fromCode,
+          TO_STATION: toCode,
+        });
+      }
+      prevStn = node;
+      prevBlock = null;
+    } else if (node.type === 'block') {
+      prevBlock = node;
+    }
+  }
+  return physicalSections;
+}
+
+/**
+ * Compute Median Absolute Deviation (MAD) of an array of numbers.
+ */
+function computeMAD(values) {
+  if (values.length === 0) return { median: NaN, mad: NaN };
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 !== 0
+    ? sorted[mid]
+    : (sorted[mid - 1] + sorted[mid]) / 2;
+  const deviations = values.map(v => Math.abs(v - median));
+  const sortedDev = [...deviations].sort((a, b) => a - b);
+  const devMid = Math.floor(sortedDev.length / 2);
+  const mad = sortedDev.length % 2 !== 0
+    ? sortedDev[devMid]
+    : (sortedDev[devMid - 1] + sortedDev[devMid]) / 2;
+  return { median, mad };
+}
+
+/**
+ * Apply MAD filtering then return the mean of surviving values.
+ * Returns null if no values survive.
+ */
+function madFilteredMean(speeds) {
+  if (speeds.length === 0) return null;
+
+  let filtered = speeds;
+  if (speeds.length >= 4) {
+    const { median, mad } = computeMAD(speeds);
+    const threshold = Math.max(3 * mad, 2); // minimum 2 km/h band
+    const candidate = speeds.filter(s => Math.abs(s - median) <= threshold);
+    if (candidate.length > 0) filtered = candidate;
+  }
+
+  if (filtered.length === 0) return null;
+  return filtered.reduce((a, b) => a + b, 0) / filtered.length;
 }
 
 export async function calculateGoodsSpeedConfig(routeInfo, layout) {
   try {
     const [kotaRows, bspRows] = await Promise.all([
-      parseCsvUrl('/data/KOTA-APR-MAY-26.csv'),
-      parseCsvUrl('/data/BSP-APR-MAY-26.csv')
+      parseCsvUrl(kotaCsvUrl),
+      parseCsvUrl(bspCsvUrl),
     ]);
     const allRows = [...kotaRows, ...bspRows];
 
-    // Build physical sections from layout.sequence
-    const physicalSections = [];
-    if (layout && layout.sequence) {
-      let currentStn = null;
-      let currentBlock = null;
-      for (let i = 0; i < layout.sequence.length; i++) {
-        const node = layout.sequence[i];
-        if (node.type === 'station') {
-          if (currentStn && currentBlock) {
-            physicalSections.push({
-              BLOCK_SECTION_CODE: currentBlock.code,
-              DISTANCE_KM: currentBlock.distanceKm || 0,
-              FROM_STATION: currentStn.code,
-              TO_STATION: node.code
-            });
-          }
-          currentStn = node;
-          currentBlock = null;
-        } else if (node.type === 'block') {
-          currentBlock = node;
+    // ── Step 1: Build physical sections ──────────────────────────────────────
+    // Uses block node `distance` from layout.sequence (sourced from RouteInfo).
+    const physicalSections = buildPhysicalSections(layout);
+
+    console.log('[GoodsSpeed] Physical sections built from layout:', physicalSections.length);
+    physicalSections.forEach(s => {
+      console.log(`  [GoodsSpeed]  ${s.BLOCK_SECTION_CODE}: ${s.DISTANCE_KM} km  (${s.FROM_STATION} → ${s.TO_STATION})`);
+    });
+
+    // ── Step 2: Build lookup maps ─────────────────────────────────────────────
+    // Primary key: block section code (e.g. "ATH-BJK")
+    // Also add the reversed key (e.g. "BJK-ATH") pointing to the same section,
+    // so that backward-direction CSV rows are matched correctly.
+    const blockSectionLookup = {};
+    physicalSections.forEach(s => {
+      const code = s.BLOCK_SECTION_CODE;
+      blockSectionLookup[code] = s;
+      if (code.includes('-')) {
+        const reversed = code.split('-').reverse().join('-');
+        if (!blockSectionLookup[reversed]) {
+          blockSectionLookup[reversed] = s;
         }
       }
-    }
-    
+    });
 
-    const config = {
-      'forward': {},
-      'backward': {},
-    };
+    // ── Step 3: Initialise config ─────────────────────────────────────────────
+    const config = { forward: {}, backward: {} };
 
-    const initConfig = (dir, sectionCode, dist) => {
-      if (!config[dir][sectionCode]) {
-        config[dir][sectionCode] = {
+    const initSection = (dir, code, dist) => {
+      if (!config[dir][code]) {
+        config[dir][code] = {
           distance: dist,
-          LOADED: { defaultSpeed: null, minimumTime: Infinity, hasData: false, totalTimes: 0 },
-          EMPTY: { defaultSpeed: null, minimumTime: Infinity, hasData: false, totalTimes: 0 }
+          LOADED: { defaultSpeed: null, hasData: false },
+          EMPTY: { defaultSpeed: null, hasData: false },
+          COACHING: { defaultSpeed: null, hasData: false },
         };
       }
     };
 
     physicalSections.forEach(s => {
-      initConfig('forward', s.BLOCK_SECTION_CODE, parseFloat(s.DISTANCE_KM) || 0);
-      initConfig('backward', s.BLOCK_SECTION_CODE, parseFloat(s.DISTANCE_KM) || 0);
+      initSection('forward', s.BLOCK_SECTION_CODE, s.DISTANCE_KM);
+      initSection('backward', s.BLOCK_SECTION_CODE, s.DISTANCE_KM);
     });
 
-    // Helper to find path of layout sections for a CSV block string like "SGAC-DXD"
-    const getLayoutSectionsForSpan = (csvSectionName) => {
-      if (!csvSectionName || !layout || !layout.sequence) return null;
-      const name = csvSectionName.trim().toUpperCase();
-      
-      // Exact match check first
-      const exact = physicalSections.find(s => s.BLOCK_SECTION_CODE.trim().toUpperCase() === name);
-      if (exact) return { sections: [exact], totalDistance: parseFloat(exact.DISTANCE_KM) || 0 };
+    // ── Step 4: Collect speed samples per (direction × section × loadType) ───
+    // speedKmH = sectionDistanceKm × 3600 / canrunningtime(seconds)
+    const speedSamples = {};   // aggKey → { direction, blockCode, loadType, distanceKm, speeds[], rawCount }
+    const rejectedCounts = {};   // reason key → count
 
-      // Split into start and end stations
-      const parts = name.split('-');
-      if (parts.length !== 2) return null;
-      const stnA = parts[0].trim();
-      const stnB = parts[1].trim();
+    const reject = (key) => { rejectedCounts[key] = (rejectedCounts[key] || 0) + 1; };
 
-      let startIndex = layout.sequence.findIndex(n => n.type === 'station' && n.code === stnA);
-      let endIndex = layout.sequence.findIndex(n => n.type === 'station' && n.code === stnB);
-      
-      if (startIndex === -1 || endIndex === -1) return null;
-      
-      // Swap if needed
-      if (startIndex > endIndex) {
-        let temp = startIndex;
-        startIndex = endIndex;
-        endIndex = temp;
-      }
-
-      let matchedSections = [];
-      let totalDist = 0;
-
-      for (let i = startIndex; i < endIndex; i++) {
-        const node = layout.sequence[i];
-        if (node.type === 'block') {
-           const lSec = physicalSections.find(s => s.BLOCK_SECTION_CODE === node.code);
-           if (lSec) {
-             matchedSections.push(lSec);
-             totalDist += parseFloat(lSec.DISTANCE_KM) || 0;
-           }
-        }
-      }
-      
-      if (matchedSections.length > 0 && totalDist > 0) {
-        return { sections: matchedSections, totalDistance: totalDist };
-      }
-      return null;
-    };
-
-    let totalFreightRows = 0;
-    let loadedCount = 0;
-    let emptyCount = 0;
-    
-    let invalidTimeRows = 0;
-    let nonPositiveTimeRows = 0;
-    let impossibleSpeedRows = 0;
-    let validRunningTimeRows = 0;
-    let validSpeedRows = 0;
-
-    let unmappedBlocks = new Set();
-    let rejectedExamples = [];
-    
-    // Group minimum times by Span + Direction + LoadType
-    const spanAggregations = {};
-
-    // Process all CSV rows
     allRows.forEach(row => {
+      // ── Train category ────────────────────────────────────────────────────
       const trainNumb = (row.cavtrainnumb || '').trim();
-      if (trainNumb !== '' && trainNumb.toLowerCase() !== 'null' && trainNumb.toLowerCase() !== 'undefined') return;
-
-      totalFreightRows++;
+      const isBlankTrainNumb =
+        trainNumb === '' ||
+        trainNumb.toLowerCase() === 'null' ||
+        trainNumb.toLowerCase() === 'undefined';
 
       const trainType = (row.cavtraintype || '').trim().toUpperCase();
+      const firstChar = trainType.charAt(0);
+
       let loadType = null;
-      if (trainType.startsWith('L')) {
-          loadType = 'LOADED';
-          loadedCount++;
-      } else if (trainType.startsWith('E')) {
-          loadType = 'EMPTY';
-          emptyCount++;
+      if (isBlankTrainNumb) {
+        if (firstChar === 'L') loadType = 'LOADED';
+        else if (firstChar === 'E') loadType = 'EMPTY';
+        // Unknown freight type — skip
+      } else {
+        loadType = 'COACHING';
       }
-      
-      if (!loadType) return;
+      if (!loadType) { reject('unknown_train_type'); return; }
 
-      const arvTimeStr = row.cadarvltime;
-      const dprtTimeStr = row.caddprttime;
-      if (!arvTimeStr || !dprtTimeStr) {
-         invalidTimeRows++;
-         return;
-      }
+      // ── Block section ─────────────────────────────────────────────────────
+      const csvBlock = (row.cavblcksctnname || '').trim().toUpperCase();
+      if (!csvBlock) { reject('blank_block_section'); return; }
 
-      // Handle raw date strings
-      const arrTime = new Date(arvTimeStr).getTime();
-      const dprtTime = new Date(dprtTimeStr).getTime();
-      if (isNaN(arrTime) || isNaN(dprtTime)) {
-         invalidTimeRows++;
-         return;
+      const physSection = blockSectionLookup[csvBlock];
+      if (!physSection) { reject(`not_in_layout:${csvBlock}`); return; }
+
+      const sectionDistanceKm = physSection.DISTANCE_KM;
+      if (!sectionDistanceKm || sectionDistanceKm <= 0) {
+        reject(`zero_distance:${csvBlock}`); return;
       }
 
-      const diffMs = dprtTime - arrTime;
-      let diffMins = diffMs / 60000;
-      
-      if (diffMins < 0) diffMins += 24 * 60; // Handle midnight crossing
-      
-      if (diffMins <= 0) {
-         nonPositiveTimeRows++;
-         return;
+      // ── Running time ──────────────────────────────────────────────────────
+      const canRunningTimeSec = parseFloat(row.canrunningtime);
+      if (isNaN(canRunningTimeSec) || canRunningTimeSec <= 0) {
+        reject(`bad_runtime:${csvBlock}`); return;
       }
 
-      const blockSection = row.cavblcksctnname;
-      const spanResult = getLayoutSectionsForSpan(blockSection);
-      
-      if (!spanResult) {
-         unmappedBlocks.add(blockSection);
-         return;
-      }
-
-      if (spanResult.totalDistance <= 0) {
-         impossibleSpeedRows++;
-         return;
-      }
-
-      const direction = row.cavdrtn ? row.cavdrtn.trim().toUpperCase() : '';
+      // ── Direction ─────────────────────────────────────────────────────────
+      const dirRaw = (row.cavdrtn || '').trim().toUpperCase();
       let dirKey = null;
-      if (direction === 'DN' || direction === 'FORWARD' || direction === 'DOWN') dirKey = 'forward';
-      else if (direction === 'UP' || direction === 'BACKWARD') dirKey = 'backward';
-      
-      if (!dirKey) return;
+      if (dirRaw === 'DN' || dirRaw === 'FORWARD' || dirRaw === 'DOWN') dirKey = 'forward';
+      else if (dirRaw === 'UP' || dirRaw === 'BACKWARD') dirKey = 'backward';
+      if (!dirKey) { reject(`unknown_direction:${dirRaw}`); return; }
 
-      // Validate speed
-      const calculatedSpeedKmH = (spanResult.totalDistance * 60) / diffMins;
-      if (calculatedSpeedKmH > 160) {
-         impossibleSpeedRows++;
-         if (rejectedExamples.length < 10) {
-            rejectedExamples.push({
-               span: blockSection,
-               direction: dirKey,
-               loadType: loadType,
-               distanceKm: spanResult.totalDistance,
-               runningTimeMinutes: diffMins,
-               calculatedSpeedKmH: calculatedSpeedKmH,
-               reason: "speed > 160 km/h"
-            });
-         }
-         return;
+      // ── Speed ─────────────────────────────────────────────────────────────
+      const speedKmH = sectionDistanceKm * 3600 / canRunningTimeSec;
+      if (speedKmH < 1 || speedKmH > 160) {
+        reject(`speed_oor:${csvBlock}:${speedKmH.toFixed(1)}`); return;
       }
-      
-      validRunningTimeRows++;
-      validSpeedRows++;
 
-      const aggKey = `${dirKey}_${blockSection}_${loadType}`;
-      if (!spanAggregations[aggKey]) {
-        spanAggregations[aggKey] = {
+      // ── Accumulate ────────────────────────────────────────────────────────
+      // Always use the canonical (forward-direction) block code as the key.
+      const canonicalCode = physSection.BLOCK_SECTION_CODE;
+      const aggKey = `${dirKey}_${canonicalCode}_${loadType}`;
+
+      if (!speedSamples[aggKey]) {
+        speedSamples[aggKey] = {
           direction: dirKey,
-          csvSpan: blockSection,
-          loadType: loadType,
-          minTime: Infinity,
-          totalDistance: spanResult.totalDistance,
-          physicalSections: spanResult.sections
+          blockCode: canonicalCode,
+          loadType,
+          distanceKm: sectionDistanceKm,
+          speeds: [],
+          rawCount: 0,
         };
       }
-      
-      if (diffMins < spanAggregations[aggKey].minTime) {
-        spanAggregations[aggKey].minTime = diffMins;
+      speedSamples[aggKey].speeds.push(speedKmH);
+      speedSamples[aggKey].rawCount++;
+    });
+
+    // ── Step 5: MAD filter → mean → store ────────────────────────────────────
+    Object.values(speedSamples).forEach(sample => {
+      const rawCount = sample.speeds.length;
+      const defaultSpeed = madFilteredMean(sample.speeds);
+      const validCount = defaultSpeed !== null ? sample.speeds.length : 0;
+
+      // Required console summary
+      console.log('[GoodsSpeed]', {
+        section: sample.blockCode,
+        direction: sample.direction,
+        loadType: sample.loadType,
+        observations: rawCount,
+        validObservations: validCount,
+        defaultSpeed: defaultSpeed !== null ? parseFloat(defaultSpeed.toFixed(2)) : null,
+      });
+
+      if (defaultSpeed !== null && defaultSpeed > 0) {
+        const { blockCode: code, direction: dir, loadType: lt } = sample;
+        if (config[dir]?.[code]?.[lt]) {
+          config[dir][code][lt].defaultSpeed = parseFloat(defaultSpeed.toFixed(2));
+          config[dir][code][lt].hasData = true;
+        }
       }
     });
 
-    // Map calculated speeds to physical sections
-    Object.values(spanAggregations).forEach(spanInfo => {
-      if (spanInfo.minTime === Infinity) return;
-      
-      const speedKmH = (spanInfo.totalDistance * 60) / spanInfo.minTime;
-      
-
-      spanInfo.physicalSections.forEach(lSec => {
-        const code = lSec.BLOCK_SECTION_CODE;
-        if (config[spanInfo.direction][code]) {
-          const stats = config[spanInfo.direction][code][spanInfo.loadType];
-          
-          const physicalSectionDistanceKm = parseFloat(lSec.DISTANCE_KM) || 0;
-          if (physicalSectionDistanceKm > 0 && speedKmH > 0) {
-            const physicalSectionTime = (physicalSectionDistanceKm * 60) / speedKmH;
-            
-            if (physicalSectionTime < stats.minimumTime) {
-              stats.minimumTime = physicalSectionTime;
-              stats.defaultSpeed = speedKmH;
-              stats.hasData = true;
-            }
+    // ── Step 6: Report zero-observation sections ──────────────────────────────
+    physicalSections.forEach(s => {
+      const code = s.BLOCK_SECTION_CODE;
+      ['forward', 'backward'].forEach(dir => {
+        ['LOADED', 'EMPTY', 'COACHING'].forEach(lt => {
+          const aggKey = `${dir}_${code}_${lt}`;
+          if (!speedSamples[aggKey] || speedSamples[aggKey].speeds.length === 0) {
+            const reversedCode = code.includes('-') ? code.split('-').reverse().join('-') : code;
+            const csvKey = dir === 'forward' ? code : reversedCode;
+            console.warn('[GoodsSpeed] ZERO observations:', {
+              section: code,
+              direction: dir,
+              loadType: lt,
+              reason: speedSamples[aggKey] ? 'all_filtered_out' : 'no_csv_rows_matched',
+              csvLookupKey: csvKey,
+              inLayout: blockSectionLookup[csvKey] ? 'yes' : 'no',
+            });
           }
-        }
+        });
       });
     });
 
+    if (Object.keys(rejectedCounts).length > 0) {
+      console.log('[GoodsSpeed] Rejection summary:', rejectedCounts);
+    }
+
     return config;
   } catch (error) {
-    console.error("[GOODS SPEED CALCULATOR ERROR]", error);
+    console.error('[GOODS SPEED CALCULATOR ERROR]', error);
     console.error(error?.stack);
-    
-    // Return empty safe config structure so UI doesn't crash
-    const safeConfig = { 'forward': {}, 'backward': {} };
-    const physicalSections = [];
-    if (layout && layout.sequence) {
-      let currentStn = null;
-      let currentBlock = null;
-      for (let i = 0; i < layout.sequence.length; i++) {
-        const node = layout.sequence[i];
-        if (node.type === 'station') {
-          if (currentStn && currentBlock) {
-            physicalSections.push({
-              BLOCK_SECTION_CODE: currentBlock.code,
-              DISTANCE_KM: currentBlock.distanceKm || 0
-            });
+
+    // Return a safe empty config so the UI doesn't crash
+    const safeConfig = { forward: {}, backward: {} };
+    if (layout?.sequence) {
+      buildPhysicalSections(layout).forEach(s => {
+        ['forward', 'backward'].forEach(dir => {
+          if (!safeConfig[dir][s.BLOCK_SECTION_CODE]) {
+            safeConfig[dir][s.BLOCK_SECTION_CODE] = {
+              distance: s.DISTANCE_KM,
+              LOADED: { defaultSpeed: null, hasData: false },
+              EMPTY: { defaultSpeed: null, hasData: false },
+              COACHING: { defaultSpeed: null, hasData: false },
+            };
           }
-          currentStn = node;
-          currentBlock = null;
-        } else if (node.type === 'block') {
-          currentBlock = node;
-        }
-      }
+        });
+      });
     }
-    
-    const initConfig = (dir, sectionCode, dist) => {
-      if (!safeConfig[dir][sectionCode]) {
-        safeConfig[dir][sectionCode] = {
-          distance: dist,
-          LOADED: { defaultSpeed: null, minimumTime: Infinity, hasData: false, totalTimes: 0 },
-          EMPTY: { defaultSpeed: null, minimumTime: Infinity, hasData: false, totalTimes: 0 }
-        };
-      }
-    };
-    physicalSections.forEach(s => {
-      initConfig('forward', s.BLOCK_SECTION_CODE, parseFloat(s.DISTANCE_KM) || 0);
-      initConfig('backward', s.BLOCK_SECTION_CODE, parseFloat(s.DISTANCE_KM) || 0);
-    });
-    
     return safeConfig;
   }
 }

@@ -101,9 +101,18 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
 
   useEffect(() => {
     if (layout && layout.sequence) {
+      console.log('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig CALLING', { layout });
       calculateGoodsSpeedConfig(null, layout).then(config => {
+        console.log('[GoodsSpeed UI DEBUG] CONFIG RECEIVED', {
+          forwardKeys: Object.keys(config?.forward || {}).slice(0, 10),
+          backwardKeys: Object.keys(config?.backward || {}).slice(0, 10),
+          kotaSection: config?.forward?.['KOTA-SGAC'],
+          kotaBackward: config?.backward?.['KOTA-SGAC']
+        });
+        console.log('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig RESULT', config);
         setGoodsSpeedConfig(config);
       }).catch(err => {
+        console.error('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig FAILED', err);
         console.error("[GOODS SPEED CALCULATOR ERROR] inside TimeDistanceGraph:", err);
       });
     }
@@ -368,7 +377,32 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
         trainLines.push(train);
       }
     });
+    const sundayContinuationLines = [];
 
+    trainLines.forEach(train => {
+      const isSundayTrain = train.trainNo.endsWith('-6');
+      if (!isSundayTrain || !train.stops?.length) return;
+      const stops = train.stops;
+      const firstAfterMidnight = stops.findIndex(
+        stop => stop.arrTime >= 168 || stop.depTime >= 168
+      );
+      if (firstAfterMidnight <= 0) return;
+      const continuationStops = [
+        stops[firstAfterMidnight - 1],
+        ...stops.slice(firstAfterMidnight)
+      ].map(stop => ({
+        ...stop,
+        arrTime: stop.arrTime - 168,
+        depTime: stop.depTime - 168
+      }));
+      sundayContinuationLines.push({
+        ...train,
+        trainNo: `${train.originalTrainNo}-monday-continuation`,
+        originalTrainNo: train.originalTrainNo,
+        stops: continuationStops
+      });
+    });
+    trainLines.push(...sundayContinuationLines);
     const minTime = 0;
     const isSpecificDayMode = typeof windowMode === 'string' && windowMode.startsWith('day-');
     const maxTime = (windowMode === '7d' || isSpecificDayMode) ? 168 : 24;
@@ -418,6 +452,16 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
           const secCode = currentBlock.code;
           const fwdStats = goodsSpeedConfig?.forward?.[secCode] || { LOADED: {}, EMPTY: {} };
           const bwdStats = goodsSpeedConfig?.backward?.[secCode] || { LOADED: {}, EMPTY: {} };
+
+          console.log('[GoodsSpeed UI DEBUG] ROW LOOKUP', {
+            secCode,
+            fwd: goodsSpeedConfig?.forward?.[secCode],
+            bwd: goodsSpeedConfig?.backward?.[secCode],
+            fwdLoaded: goodsSpeedConfig?.forward?.[secCode]?.LOADED?.defaultSpeed,
+            fwdEmpty: goodsSpeedConfig?.forward?.[secCode]?.EMPTY?.defaultSpeed,
+            bwdLoaded: goodsSpeedConfig?.backward?.[secCode]?.LOADED?.defaultSpeed,
+            bwdEmpty: goodsSpeedConfig?.backward?.[secCode]?.EMPTY?.defaultSpeed
+          });
 
           rows.push({
             secCode,
@@ -1571,7 +1615,7 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
 
       const segmentStartT = currentT % maxTime;
       let segmentEndT = nextT % maxTime;
-      if (segmentEndT === 0 && nextT > currentT) {
+      if (segmentEndT === 0 && nextT > currentT && nextT !== 0) {
         segmentEndT = maxTime;
       }
 
