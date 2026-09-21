@@ -90,7 +90,7 @@ export async function runSimulation({
 
   const hwMargin = parseInt(simHeadway) || 5;
   const maxDetentionMins = (parseInt(simMaxDetention) || 2) * 60;
-  const speedLimit = (simSpeed === 'goods' || !simSpeed) ? null : parseFloat(simSpeed);
+  const speedLimit = (simSpeed === 'goods' || simSpeed === 'coaching' || !simSpeed) ? null : parseFloat(simSpeed);
   const parseTimeInput = val => {
     if (!val) return 0;
     if (String(val).includes(':')) {
@@ -566,10 +566,10 @@ export async function runSimulation({
 
         let stnSpeeds = speedLimit ? [speedLimit] : cachedGetStationSpeeds(block.stn1.code);
 
-        if (simSpeed === 'goods') {
+        if (simSpeed === 'goods' || simSpeed === 'coaching' || !simSpeed) {
           const dirKey = reqDir === 'DOWN' ? 'forward' : 'backward';
           const secCode = block.blockCode;
-          const loadType = simTrainLoadType || 'LOADED';
+          const loadType = (simSpeed === 'coaching' || !simSpeed) ? 'COACHING' : (simTrainLoadType || 'LOADED');
           const ovrKey = `${dirKey}_${secCode}_${loadType}`;
           const override = goodsSpeedOverrides && goodsSpeedOverrides[ovrKey];
 

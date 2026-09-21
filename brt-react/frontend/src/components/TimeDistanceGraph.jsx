@@ -31,7 +31,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   const [simTimeUpto, setSimTimeUpto] = useState('23:59');
   const [simCompletionTime, setSimCompletionTime] = useState('');
   const [simHeadway, setSimHeadway] = useState('5');
-  const [simSpeed, setSimSpeed] = useState('');
+  const [simSpeed, setSimSpeed] = useState('coaching');
   const [simMaxDetention, setSimMaxDetention] = useState('2');
 
   const [goodsSpeedConfig, setGoodsSpeedConfig] = useState(null);
@@ -51,7 +51,10 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   const abortSimRef = useRef(false);
   const [isSimulating, setIsSimulating] = useState(false);
   const [showSimStatsModal, setShowSimStatsModal] = useState(false);
+  const [showJourneyTimeModal, setShowJourneyTimeModal] = useState(false);
+  const [showDetentionSummaryModal, setShowDetentionSummaryModal] = useState(false);
   const [showGoodsConfigModal, setShowGoodsConfigModal] = useState(false);
+  const [showCoachingConfigModal, setShowCoachingConfigModal] = useState(false);
 
   const formatMMSS = (val, prevVal) => {
     if (!val) return '';
@@ -101,19 +104,10 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
 
   useEffect(() => {
     if (layout && layout.sequence) {
-      console.log('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig CALLING', { layout });
       calculateGoodsSpeedConfig(null, layout).then(config => {
-        console.log('[GoodsSpeed UI DEBUG] CONFIG RECEIVED', {
-          forwardKeys: Object.keys(config?.forward || {}).slice(0, 10),
-          backwardKeys: Object.keys(config?.backward || {}).slice(0, 10),
-          kotaSection: config?.forward?.['KOTA-SGAC'],
-          kotaBackward: config?.backward?.['KOTA-SGAC']
-        });
-        console.log('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig RESULT', config);
         setGoodsSpeedConfig(config);
       }).catch(err => {
-        console.error('[GoodsSpeed DEBUG] calculateGoodsSpeedConfig FAILED', err);
-        console.error("[GOODS SPEED CALCULATOR ERROR] inside TimeDistanceGraph:", err);
+        console.error('Goods speed config calculation failed:', err);
       });
     }
   }, [layout]);
@@ -450,18 +444,9 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
           const fwdName = `${lastStn.code}-${node.code}`;
           const bwdName = `${node.code}-${lastStn.code}`;
           const secCode = currentBlock.code;
-          const fwdStats = goodsSpeedConfig?.forward?.[secCode] || { LOADED: {}, EMPTY: {} };
-          const bwdStats = goodsSpeedConfig?.backward?.[secCode] || { LOADED: {}, EMPTY: {} };
+          const fwdStats = goodsSpeedConfig?.forward?.[secCode] || { LOADED: {}, EMPTY: {}, COACHING: {} };
+          const bwdStats = goodsSpeedConfig?.backward?.[secCode] || { LOADED: {}, EMPTY: {}, COACHING: {} };
 
-          console.log('[GoodsSpeed UI DEBUG] ROW LOOKUP', {
-            secCode,
-            fwd: goodsSpeedConfig?.forward?.[secCode],
-            bwd: goodsSpeedConfig?.backward?.[secCode],
-            fwdLoaded: goodsSpeedConfig?.forward?.[secCode]?.LOADED?.defaultSpeed,
-            fwdEmpty: goodsSpeedConfig?.forward?.[secCode]?.EMPTY?.defaultSpeed,
-            bwdLoaded: goodsSpeedConfig?.backward?.[secCode]?.LOADED?.defaultSpeed,
-            bwdEmpty: goodsSpeedConfig?.backward?.[secCode]?.EMPTY?.defaultSpeed
-          });
 
           rows.push({
             secCode,
@@ -470,7 +455,9 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
             fwdLoadedDef: fwdStats.LOADED?.defaultSpeed,
             fwdEmptyDef: fwdStats.EMPTY?.defaultSpeed,
             bwdLoadedDef: bwdStats.LOADED?.defaultSpeed,
-            bwdEmptyDef: bwdStats.EMPTY?.defaultSpeed
+            bwdEmptyDef: bwdStats.EMPTY?.defaultSpeed,
+            fwdCoachingDef: fwdStats.COACHING?.defaultSpeed,
+            bwdCoachingDef: bwdStats.COACHING?.defaultSpeed
           });
         }
         lastStn = node;
@@ -812,6 +799,32 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </button>
               </>
             )}
+            <button onClick={() => setShowJourneyTimeModal(true)} style={{
+              padding: '6px 12px',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '12px',
+              whiteSpace: 'nowrap'
+            }}>
+              Journey Time
+            </button>
+            <button onClick={() => setShowDetentionSummaryModal(true)} style={{
+              padding: '6px 12px',
+              background: '#0891b2',
+              color: 'white',
+              border: 'none',
+              borderRadius: '5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontSize: '12px',
+              whiteSpace: 'nowrap'
+            }}>
+              Detention Summary
+            </button>
           </div>
         </div>
       </div>
@@ -1113,8 +1126,17 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>Speed (kmph)</label>
-                  <select value={simSpeed} onChange={e => setSimSpeed(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
-                    <option value="">Default (Coaching Trains)</option>
+                  <select 
+                    value={simSpeed} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      setSimSpeed(val);
+                      if (val === 'coaching') setShowCoachingConfigModal(true);
+                      if (val === 'goods') setShowGoodsConfigModal(true);
+                    }} 
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                  >
+                    <option value="coaching">Default (Coaching Speed)</option>
                     <option value="goods">Default (Goods Speed)</option>
                     {[30, 45, 60, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
@@ -1182,21 +1204,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
               </div>
 
-              {simSpeed === 'goods' && (
-                <div style={{ marginBottom: '16px', padding: '12px', border: '1px solid #2563eb', borderRadius: '8px', backgroundColor: '#f0fdf4', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#16a34a' }}>Goods Speed Configuration</label>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>Custom defaults per section and direction</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowGoodsConfigModal(true)}
-                    style={{ padding: '6px 12px', borderRadius: '6px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
-                  >
-                    Configure Goods Speed
-                  </button>
-                </div>
-              )}
+
 
               {/* Stops & Halt Times — Dropdown Menu */}
               <div style={{ marginBottom: '18px', position: 'relative' }}>
@@ -1507,6 +1515,100 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 style={{ padding: '8px 24px', borderRadius: '6px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
               >
                 Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Coaching Speed Config Modal */}
+      {showCoachingConfigModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', width: '600px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Coaching Speed Configuration</h3>
+              <button
+                type="button"
+                onClick={() => setShowCoachingConfigModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '20px', cursor: 'pointer', lineHeight: 1, padding: '0 4px' }}
+              >
+                ×
+              </button>
+            </div>
+            <div style={{ padding: '0px', overflowY: 'auto', flex: 1 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
+                <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f1f5f9', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', zIndex: 10 }}>
+                  <tr>
+                    <th colSpan="2" style={{ padding: '8px', borderRight: '2px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>DOWN DIRECTION (FORWARD)</th>
+                    <th colSpan="2" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>UP DIRECTION (BACKWARD)</th>
+                  </tr>
+                  <tr>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>SPEED</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>SPEED</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {goodsSpeedRows.length === 0 ? (
+                    <tr><td colSpan="4" style={{ padding: '20px', color: '#64748b' }}>No configuration data available</td></tr>
+                  ) : (
+                    goodsSpeedRows.map((row, idx) => {
+                      const getOvr = (dir, load) => goodsSpeedOverrides[`${dir}_${row.secCode}_${load}`] || '';
+                      const setOvr = (dir, load, val) => setGoodsSpeedOverrides(prev => ({ ...prev, [`${dir}_${row.secCode}_${load}`]: val }));
+
+                      const formatDef = (v) => {
+                        return v !== null && v !== undefined && Number.isFinite(Number(v))
+                          ? Number(v).toFixed(1)
+                          : 'N/A';
+                      };
+
+                      const fwdCoachingDef = formatDef(row.fwdCoachingDef);
+                      const bwdCoachingDef = formatDef(row.bwdCoachingDef);
+
+                      return (
+                        <tr key={row.secCode} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.fwdName}</td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '2px solid #cbd5e1' }}>
+                            <input
+                              type="number"
+                              value={getOvr('forward', 'COACHING')}
+                              onChange={e => setOvr('forward', 'COACHING', e.target.value)}
+                              placeholder={`[ ${fwdCoachingDef} ]`}
+                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            />
+                          </td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.bwdName}</td>
+                          <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0' }}>
+                            <input
+                              type="number"
+                              value={getOvr('backward', 'COACHING')}
+                              onChange={e => setOvr('backward', 'COACHING', e.target.value)}
+                              placeholder={`[ ${bwdCoachingDef} ]`}
+                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <div style={{ padding: '16px 24px', borderTop: '1px solid #e2e8f0', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'flex-end', gap: '12px', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowCoachingConfigModal(false)}
+                style={{ padding: '8px 24px', borderRadius: '6px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowCoachingConfigModal(false)}
+                style={{ padding: '8px 24px', borderRadius: '6px', backgroundColor: '#16a34a', color: '#ffffff', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                Save
               </button>
             </div>
           </div>
