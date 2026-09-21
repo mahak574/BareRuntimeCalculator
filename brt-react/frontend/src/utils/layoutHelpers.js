@@ -112,28 +112,9 @@ export const buildStationLineDirections = (layout) => {
         const calcDir = isLeftToRight ? 'DOWN' : 'UP';
         const existingDir = mainLineColorsByIndex[conn.MAVSTTNCODE][mainLineIndex];
 
-        console.log('[DIRECTION SOURCE]', {
-          station: conn.MAVSTTNCODE,
-          connectionBlockSection: bsCode,
-          MANSTTNLINENUMB: conn.MANSTTNLINENUMB,
-          resolvedSeqNum: seqNum,
-          mainLineIndex: mainLineIndex,
-          MACRECVSENDFLAG: conn.MACRECVSENDFLAG,
-          bsIndex: bsIndex,
-          stnIndex: stnIndex,
-          isLeftToRight: isLeftToRight,
-          calculatedDirection: calcDir
-        });
 
         if (existingDir && existingDir !== calcDir) {
-          console.log('[DIRECTION OVERWRITE]', {
-            station: conn.MAVSTTNCODE,
-            mainLineIndex: mainLineIndex,
-            previousDirection: existingDir,
-            newDirection: calcDir,
-            sourceConnection: bsCode
-          });
-          console.log('[AMBIGUOUS LINE DIRECTION]');
+          // direction conflict — keep last assignment
         }
 
         mainLineColorsByIndex[conn.MAVSTTNCODE][mainLineIndex] = calcDir;
@@ -165,6 +146,5 @@ export const buildStationLineDirections = (layout) => {
     }
   });
 
-  console.log('[FINAL STATION LINE DIRECTIONS]', directions);
   return directions;
 };

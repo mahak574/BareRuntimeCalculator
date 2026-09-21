@@ -100,35 +100,15 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   }, []);
 
   useEffect(() => {
-    console.log("[GOODS CALL CHECK]", {
-      layoutExists: !!layout,
-      layoutSequenceLength: layout?.sequence?.length,
-      shouldCall: !!(layout && layout.sequence)
-    });
-
     if (layout && layout.sequence) {
-      console.log("[GOODS DEBUG] >>> CALLING calculateGoodsSpeedConfig()");
       calculateGoodsSpeedConfig(null, layout).then(config => {
-        console.log("[GOODS UI TRACE] calculator returned:", config);
-        console.log("[GOODS UI TRACE] forward SGAC-CDSL:", config?.forward?.["SGAC-CDSL"]);
-        console.log("[GOODS UI TRACE] backward SGAC-CDSL:", config?.backward?.["SGAC-CDSL"]);
-
         setGoodsSpeedConfig(config);
       }).catch(err => {
         console.error("[GOODS SPEED CALCULATOR ERROR] inside TimeDistanceGraph:", err);
       });
-    } else {
-      console.warn("[GOODS DEBUG] >>> CALCULATOR NOT CALLED", {
-        layoutExists: !!layout
-      });
     }
   }, [layout]);
 
-  useEffect(() => {
-    console.log("[GOODS UI TRACE] goodsSpeedConfig STATE:", goodsSpeedConfig);
-    console.log("[GOODS UI TRACE] STATE forward SGAC-CDSL:",
-      goodsSpeedConfig?.forward?.["SGAC-CDSL"]);
-  }, [goodsSpeedConfig]);
 
   const graphData = useMemo(() => {
     if (!layout || !layout.sequence || !scheduleData) return null;
@@ -425,16 +405,6 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   }, [layout, scheduleData, windowMode, ySpacing, yView]);
 
   const goodsSpeedRows = useMemo(() => {
-    console.log("[GOODS UI STATE]", {
-      hasConfig: !!goodsSpeedConfig,
-      forwardKeys: goodsSpeedConfig?.forward ? Object.keys(goodsSpeedConfig.forward) : [],
-      backwardKeys: goodsSpeedConfig?.backward ? Object.keys(goodsSpeedConfig.backward) : [],
-      sgacCdslForwardLoaded: goodsSpeedConfig?.forward?.["SGAC-CDSL"]?.LOADED?.defaultSpeed,
-      sgacCdslForwardEmpty: goodsSpeedConfig?.forward?.["SGAC-CDSL"]?.EMPTY?.defaultSpeed,
-      sgacCdslBackwardLoaded: goodsSpeedConfig?.backward?.["SGAC-CDSL"]?.LOADED?.defaultSpeed,
-      sgacCdslBackwardEmpty: goodsSpeedConfig?.backward?.["SGAC-CDSL"]?.EMPTY?.defaultSpeed
-    });
-
     if (!layout || !layout.sequence) return [];
     let rows = [];
     let lastStn = null;
@@ -446,28 +416,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
           const fwdName = `${lastStn.code}-${node.code}`;
           const bwdName = `${node.code}-${lastStn.code}`;
           const secCode = currentBlock.code;
-
-          console.log("[GOODS SECTION CODE]", {
-            layoutBlockCode: currentBlock.code,
-            normalizedLayoutBlockCode: String(currentBlock.code || "").trim().toUpperCase(),
-            availableForwardKeys: Object.keys(goodsSpeedConfig?.forward || {}),
-            availableBackwardKeys: Object.keys(goodsSpeedConfig?.backward || {})
-          });
-
           const fwdStats = goodsSpeedConfig?.forward?.[secCode] || { LOADED: {}, EMPTY: {} };
           const bwdStats = goodsSpeedConfig?.backward?.[secCode] || { LOADED: {}, EMPTY: {} };
-
-          console.log("[GOODS ROW TRACE]", {
-            secCode,
-            fwdName,
-            bwdName,
-            configForwardExists: !!goodsSpeedConfig?.forward?.[secCode],
-            configBackwardExists: !!goodsSpeedConfig?.backward?.[secCode],
-            fwdLoaded: goodsSpeedConfig?.forward?.[secCode]?.LOADED?.defaultSpeed,
-            fwdEmpty: goodsSpeedConfig?.forward?.[secCode]?.EMPTY?.defaultSpeed,
-            bwdLoaded: goodsSpeedConfig?.backward?.[secCode]?.LOADED?.defaultSpeed,
-            bwdEmpty: goodsSpeedConfig?.backward?.[secCode]?.EMPTY?.defaultSpeed
-          });
 
           rows.push({
             secCode,
@@ -539,7 +489,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
         simDirections,
         abortSimRef,
         simulatedPaths,
-        debug: true
+        debug: false
       });
 
       if (abortSimRef.current) return;
@@ -1448,13 +1398,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                       const getOvr = (dir, load) => goodsSpeedOverrides[`${dir}_${row.secCode}_${load}`] || '';
                       const setOvr = (dir, load, val) => setGoodsSpeedOverrides(prev => ({ ...prev, [`${dir}_${row.secCode}_${load}`]: val }));
 
-                      const formatDef = (v, label = '') => {
-                        console.log("[GOODS DISPLAY TRACE]", {
-                          label,
-                          value: v,
-                          type: typeof v
-                        });
-
+                      const formatDef = (v) => {
                         return v !== null && v !== undefined && Number.isFinite(Number(v))
                           ? Number(v).toFixed(1)
                           : 'N/A';

@@ -486,15 +486,6 @@ export async function runSimulation({
     if (assignedLineId) {
       return { conflict: false, assignedLineId };
     } else {
-      console.log('[STATION CAPACITY FAILURE]', {
-        trainId: reqTrainId,
-        direction: reqDir,
-        station: stnCode,
-        requestedStart: reqStart,
-        requestedEnd: reqEnd,
-        compatibleLines: compatibleLines.map(l => l.lineId),
-        allocations: allocations.map(a => ({ lineId: a.lineId, trainId: a.tId, start: a.tStart, end: a.tEnd }))
-      });
       diagnostics.stationCapacityFailures = (diagnostics.stationCapacityFailures || 0) + 1;
       return { conflict: true, assignedLineId: null };
     }
@@ -598,32 +589,8 @@ export async function runSimulation({
 
           if (foundSpeed) {
             stnSpeeds = [foundSpeed];
-            let calcTime = (block.dist / foundSpeed) * 60;
-
-            if (goodsLogCount < 10) {
-              console.log(`\n[GOODS EFFECTIVE SPEED]\n` + JSON.stringify({
-                trainId: reqTrainId,
-                direction: dirKey,
-                loadType: loadType,
-                blockSection: secCode,
-                speedMode: 'goods',
-                overrideSpeed: override ? parseFloat(override) : null,
-                defaultGoodsSpeed: defSpeed,
-                effectiveSpeed: foundSpeed
-              }, null, 2));
-
-              console.log(`\n[GOODS TRAVEL TIME]\n` + JSON.stringify({
-                blockSection: secCode,
-                distanceKm: block.dist,
-                effectiveSpeedKmH: foundSpeed,
-                calculatedTravelTimeMinutes: calcTime
-              }, null, 2));
-
-              goodsLogCount++;
-            }
           } else {
             stnSpeeds = cachedGetStationSpeeds(block.stn1.code);
-            console.warn(`[GOODS SPEED DATA MISSING] fallback to existing behavior for ${dirKey} ${secCode} ${loadType}`);
           }
         }
 
@@ -673,17 +640,7 @@ export async function runSimulation({
             runTime = 10;
           }
 
-          console.log(JSON.stringify({
-            startStation: block.stn1.code,
-            endStation: block.stn2.code,
-            accelerationApplied: accelMins > 0,
-            decelerationApplied: decelMins > 0,
-            accelerationMinutes: accelMins,
-            decelerationMinutes: decelMins,
-            isActualStop: stn1IsActualStop || stn2IsActualStop,
-            isFinalDestination: i === n - 2,
-            calculatedRunTime: runTime
-          }, null, 2));
+
 
           const testArr = depTime + runTime;
           diagnostics.blockConflictChecks++;
@@ -722,30 +679,7 @@ export async function runSimulation({
             }
           }
 
-          // 12. DEBUG LOGGING
-          console.log('[SIGNALLING CHECK]', {
-            signalling: blockInfo.signalling,
-            blockCode: block.code,
-            trainId: `sim_${i}`,
-            conflictingTrainId: confTrainId,
-            sameDirOverlaps,
-            oppDirOverlaps,
-            headwayViolation,
-            automaticSeparationViolation
-          });
-
           if (blockConflict) {
-            console.log('[BLOCK CONFLICT]', {
-              signalling: blockInfo.signalling,
-              blockCode: block.code,
-              candidateDirection: 'SIMULATED_PATH_DIR',
-              conflictingDirection: confTrainDir,
-              sameDirOverlaps,
-              oppDirOverlaps,
-              headwayViolation,
-              automaticSeparationViolation,
-              finalConflictReason: conflictReason
-            });
             blockConflictFound = true;
             continue;
           }
@@ -914,7 +848,9 @@ export async function runSimulation({
 
   const formatSimulatedPath = (path, stations, isFwd, pathPrefix, totalWaitMins, detentionCount, currentPathsCount) => {
     const stops = [];
+    const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const getDay = mins => Math.floor((mins - startDayIdx * 24 * 60) / (24 * 60)) + 1;
+    const getWeekDay = mins => simDay === 'All' ? 'Daily' : DAY_ABBR[(startDayIdx + getDay(mins) - 1) % 7];
     path.forEach((seg, idx) => {
       if (idx === 0) {
         stops.push({
@@ -924,7 +860,7 @@ export async function runSimulation({
           absArrMins: seg.arrivalTime,
           absDepMins: seg.actualDeparture,
           arrStr: 'Origin', depStr: formatTimeMins(seg.actualDeparture),
-          dayOfSrvc: getDay(seg.arrivalTime), weekDay: simDay === 'All' ? 'Daily' : simDay,
+          dayOfSrvc: getDay(seg.arrivalTime), weekDay: getWeekDay(seg.arrivalTime),
           y: stations.find(s => s.code === seg.startStn)?.y || 0,
           normalHalt: seg.normalHalt, detentionMinutes: seg.detentionMinutes, detentionReason: seg.detentionReason,
           stationLineId: seg.startLineId
@@ -947,7 +883,7 @@ export async function runSimulation({
         arrTime: (arrMins - startDayIdx * 24 * 60) / 60, depTime: (depMins - startDayIdx * 24 * 60) / 60,
         absArrMins: arrMins, absDepMins: depMins,
         arrStr: formatTimeMins(arrMins), depStr: isDestination ? 'Destination' : formatTimeMins(depMins),
-        dayOfSrvc: getDay(arrMins), weekDay: simDay === 'All' ? 'Daily' : simDay,
+        dayOfSrvc: getDay(arrMins), weekDay: getWeekDay(arrMins),
         y: stations.find(s => s.code === seg.endStn)?.y || 0,
         normalHalt: haltMins, detentionMinutes: detentionMins, detentionReason: dReason,
         stationLineId: seg.endLineId
@@ -1098,25 +1034,10 @@ export async function runSimulation({
               const aStart = a.tStart + (a.daysBits ? day * 1440 : 0);
               const aEnd = a.tEnd + (a.daysBits ? day * 1440 : 0);
 
-              if (aStart < newAlloc.tEnd && newAlloc.tStart < (aEnd + STATION_SAFETY_MARGIN)) {
-                console.log('[ILLEGAL COMMIT DETECTED]', JSON.stringify({
-                  station: stop.station,
-                  lineId: stop.stationLineId,
-                  existingTrain: a.tId,
-                  candidateTrain: tId,
-                  existingStart: aStart,
-                  existingEnd: aEnd,
-                  candidateStart: newAlloc.tStart,
-                  candidateEnd: newAlloc.tEnd,
-                  overlapStart: Math.max(aStart, newAlloc.tStart),
-                  overlapEnd: Math.min(aEnd + STATION_SAFETY_MARGIN, newAlloc.tEnd)
-                }, null, 2));
-              }
             }
           }
 
           allocations.push(newAlloc);
-          console.log('[GLOBAL ALLOCATION SIZE]', { station: stop.station, allocationCount: allocations.length });
         }
       }
 
@@ -1132,8 +1053,8 @@ export async function runSimulation({
         if (tryFwd) tryStartMinsFwd = Infinity;
         else tryStartMinsBwd = Infinity;
       } else {
-        if (tryFwd) tryStartMinsFwd += 1;
-        else tryStartMinsBwd += 1;
+        if (tryFwd) tryStartMinsFwd += hwMargin;
+        else tryStartMinsBwd += hwMargin;
       }
     }
   }
@@ -1214,28 +1135,7 @@ export async function runSimulation({
               hasSameLineOverlap = true;
               sameLineOverlapCount++;
 
-              // Print REAL STATION OVERLAP
-              const overlappingOnLine = trainsAtT.filter(tr => String(tr.lineId) === String(l));
-              if (overlappingOnLine.length >= 2) {
-                const trA = overlappingOnLine[0];
-                const trB = overlappingOnLine[1];
-                console.log('[REAL STATION OVERLAP]', JSON.stringify({
-                  station: stn,
-                  lineId: l,
-                  trainA: trA.trainId,
-                  trainB: trB.trainId,
-                  directionA: trA.direction,
-                  directionB: trB.direction,
-                  arrivalA: trA.start,
-                  departureA: trA.end,
-                  arrivalB: trB.start,
-                  departureB: trB.end,
-                  daysBitsA: trA.daysBits,
-                  daysBitsB: trB.daysBits,
-                  overlapStart: Math.max(trA.start, trB.start),
-                  overlapEnd: Math.min(trA.end + STATION_SAFETY_MARGIN, trB.end + STATION_SAFETY_MARGIN)
-                }, null, 2));
-              }
+
             }
           }
 

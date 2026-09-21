@@ -22,18 +22,12 @@ function parseCsvUrl(url) {
 }
 
 export async function calculateGoodsSpeedConfig(routeInfo, layout) {
-  console.log("[GOODS DEBUG] calculator started");
-  console.log("[GOODS DEBUG] layout received:", !!layout, "layout sequence length:", layout?.sequence?.length);
   try {
     const [kotaRows, bspRows] = await Promise.all([
       parseCsvUrl('/data/KOTA-APR-MAY-26.csv'),
       parseCsvUrl('/data/BSP-APR-MAY-26.csv')
     ]);
-    console.log(`[GOODS DEBUG] KOTA CSV rows: ${kotaRows.length}`);
-    console.log(`[GOODS DEBUG] BSP CSV rows: ${bspRows.length}`);
-
     const allRows = [...kotaRows, ...bspRows];
-    console.log(`[GOODS DEBUG] TOTAL CSV rows: ${allRows.length}`);
 
     // Build physical sections from layout.sequence
     const physicalSections = [];
@@ -59,8 +53,6 @@ export async function calculateGoodsSpeedConfig(routeInfo, layout) {
       }
     }
     
-    console.log(`[GOODS DEBUG] layout sections count: ${physicalSections.length}`);
-    console.log(`[GOODS DEBUG] layout sections:`, physicalSections.map(s => s.BLOCK_SECTION_CODE));
 
     const config = {
       'forward': {},
@@ -253,22 +245,6 @@ export async function calculateGoodsSpeedConfig(routeInfo, layout) {
       
       const speedKmH = (spanInfo.totalDistance * 60) / spanInfo.minTime;
       
-      console.log(`[GOODS MIN TIME]\n` + JSON.stringify({
-        direction: spanInfo.direction,
-        span: spanInfo.csvSpan,
-        loadType: spanInfo.loadType,
-        minimumRunningTime: spanInfo.minTime,
-        totalDistanceKm: spanInfo.totalDistance,
-        calculatedSpeed: speedKmH
-      }, null, 2));
-
-      if (spanInfo.physicalSections.length > 1) {
-        console.log(`[GOODS SPAN MAPPING]\n` + JSON.stringify({
-          csvSpan: spanInfo.csvSpan,
-          physicalSections: spanInfo.physicalSections.map(s => s.BLOCK_SECTION_CODE),
-          totalDistanceKm: spanInfo.totalDistance
-        }, null, 2));
-      }
 
       spanInfo.physicalSections.forEach(lSec => {
         const code = lSec.BLOCK_SECTION_CODE;
@@ -288,50 +264,6 @@ export async function calculateGoodsSpeedConfig(routeInfo, layout) {
         }
       });
     });
-
-    console.log("[GOODS DATA QUALITY]\n" + JSON.stringify({
-      totalFreightRows,
-      invalidTimeRows,
-      nonPositiveTimeRows,
-      impossibleSpeedRows,
-      validRunningTimeRows,
-      validSpeedRows
-    }, null, 2));
-
-    rejectedExamples.forEach(ex => {
-       console.log("[GOODS OUTLIER REJECTED]\n" + JSON.stringify(ex, null, 2));
-    });
-
-    console.log(`[GOODS DEBUG] freight records: ${totalFreightRows}`);
-    console.log(`[GOODS DEBUG] loaded records: ${loadedCount}`);
-    console.log(`[GOODS DEBUG] empty records: ${emptyCount}`);
-    console.log(`[GOODS SPEED MAPPING] Successfully mapped speeds for ${validSpeedRows} rows.`);
-    console.log(`[GOODS SPEED UNMAPPED] Distinct unmapped CSV blocks:`, Array.from(unmappedBlocks));
-
-    ['SGAC-CDSL', 'CDSL-DXD'].forEach(section => {
-       console.log("\n[GOODS FINAL VERIFY]\n" + JSON.stringify({
-         section: section,
-         direction: "forward",
-         loadedSpeed: config.forward[section]?.LOADED?.defaultSpeed,
-         emptySpeed: config.forward[section]?.EMPTY?.defaultSpeed,
-         loadedMinimumTime: config.forward[section]?.LOADED?.minimumTime,
-         emptyMinimumTime: config.forward[section]?.EMPTY?.minimumTime
-       }, null, 2));
-
-       console.log("\n[GOODS FINAL VERIFY]\n" + JSON.stringify({
-         section: section,
-         direction: "backward",
-         loadedSpeed: config.backward[section]?.LOADED?.defaultSpeed,
-         emptySpeed: config.backward[section]?.EMPTY?.defaultSpeed,
-         loadedMinimumTime: config.backward[section]?.LOADED?.minimumTime,
-         emptyMinimumTime: config.backward[section]?.EMPTY?.minimumTime
-       }, null, 2));
-    });
-
-    console.log("[GOODS DEBUG] forward keys:", Object.keys(config?.forward || {}));
-    console.log("[GOODS DEBUG] backward keys:", Object.keys(config?.backward || {}));
-    console.log("[GOODS DEBUG] calculator result valid:", true);
-    // console.log("[GOODS DEBUG] FINAL CONFIG:\n", JSON.stringify(config, null, 2));
 
     return config;
   } catch (error) {
