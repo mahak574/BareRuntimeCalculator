@@ -850,7 +850,7 @@ export async function runSimulation({
     const stops = [];
     const DAY_ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     const getDay = mins => Math.floor((mins - startDayIdx * 24 * 60) / (24 * 60)) + 1;
-    const getWeekDay = mins => simDay === 'All' ? 'Daily' : DAY_ABBR[(startDayIdx + getDay(mins) - 1) % 7];
+    const getWeekDay = mins => simDay === 'All' ? 'Daily' : DAY_ABBR[Math.floor(mins / 1440) % 7];
     path.forEach((seg, idx) => {
       if (idx === 0) {
         stops.push({
