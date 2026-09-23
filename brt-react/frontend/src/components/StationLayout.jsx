@@ -295,7 +295,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
         >
           <defs>
             <marker id="arrowBlue" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563eb" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" />
             </marker>
             <marker id="arrowOrange" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" />
@@ -308,7 +308,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             </marker>
 
             <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563eb" transform="scale(1.5)" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" transform="scale(1.5)" />
             </marker>
             <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" transform="scale(1.5)" />
@@ -353,20 +353,20 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               <circle cx="12" cy="4" r="1" fill="#f8fafc" opacity="0.5" />
             </pattern>
             <linearGradient id="railGradOrange" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#c2410c" />
+              <stop offset="0%" stopColor="#ea580c" />
               <stop offset="50%" stopColor="#ea580c" />
-              <stop offset="100%" stopColor="#c2410c" />
+              <stop offset="100%" stopColor="#ea580c" />
             </linearGradient>
             <pattern id="sleepersOrange" width="12" height="16" patternUnits="userSpaceOnUse">
               <rect x="2" y="0" width="8" height="16" fill="#ea580c" rx="2" />
             </pattern>
             <linearGradient id="railGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1e40af" />
-              <stop offset="50%" stopColor="#2563eb" />
-              <stop offset="100%" stopColor="#1e40af" />
+              <stop offset="0%" stopColor="#2563ebff" />
+              <stop offset="50%" stopColor="#2563ebff" />
+              <stop offset="100%" stopColor="#2563ebff" />
             </linearGradient>
             <pattern id="sleepersBlue" width="12" height="16" patternUnits="userSpaceOnUse">
-              <rect x="2" y="0" width="8" height="16" fill="#2563eb" rx="2" />
+              <rect x="2" y="0" width="8" height="16" fill="#2563ebff" rx="2" />
             </pattern>
           </defs>
 
@@ -412,7 +412,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 <g key={`mlt-${i}`}>
                   {trkIsAbsolute ? (
                     <>
-                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563eb' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
+                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
                     </>
                   ) : (
                     <>
@@ -456,11 +456,11 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 )}
                 {isBlockAbsolute(sl.adjacentBsCode) ? (
                   // Absolute signalling: filled rect, no stroke border, no shadow
-                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563eb' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
+                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
                 ) : (
                   // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
                   <>
-                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="0.9" />
+                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
                     <line x1={sl.x1} y1={sl.y - 1} x2={sl.x2} y2={sl.y - 1} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                     <line x1={sl.x1} y1={sl.y + 1} x2={sl.x2} y2={sl.y + 1} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                   </>
@@ -470,8 +470,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
             {renderData.blockLines.map((bl, i) => {
               const isAutoSignalling = String(layout?.blockSections?.[bl.bsCode]?.lines?.[0]?.MAVSIGNALLING || '').trim().toUpperCase() === 'AUTO';
-              const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563eb' : '#475569';
-              const solidFillLight = bl.trackColor === 'orange' ? '#fed7aa' : bl.trackColor === 'blue' ? '#bfdbfe' : '#cbd5e1';
+              const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#475569';
+              const solidFillLight = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#cbd5e1';
               return (
                 <g
                   key={`bl-${i}`}
@@ -496,7 +496,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   {isAutoSignalling ? (
                     /* Auto Signalling: thinner sleepers + two rails, no drop-shadow filter */
                     <>
-                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="0.8" />
+                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
                       <line x1={bl.x1} y1={bl.y - 1} x2={bl.x2} y2={bl.y - 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                       <line x1={bl.x1} y1={bl.y + 1} x2={bl.x2} y2={bl.y + 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                     </>
@@ -509,7 +509,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       height={10}
                       rx="2"
                       fill={solidFillLight}
-                      opacity="0.92"
+                      opacity="1"
                     />
                   )}
                 </g>
@@ -522,7 +522,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               if (c.color === '#ea580c') {
                 arrowId = "arrowOrange";
                 mainArrowId = "arrowOrangeMain";
-              } else if (c.color === '#2563eb') {
+              } else if (c.color === '#2563ebff' || c.color === '#2563eb') {
                 arrowId = "arrowBlue";
                 mainArrowId = "arrowBlueMain";
               }
@@ -543,10 +543,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeWidth="4"
                       strokeLinejoin="round"
                       fill="none"
-                      opacity="0.9"
-                      markerMid={c.isRedundantMainLine ? "url(#arrowBiMain)" : "none"}
-                      markerStart={c.isRedundantMainLine ? "none" : "url(#arrowBi)"}
-                      markerEnd={c.isRedundantMainLine ? "none" : "url(#arrowBi)"}
+                      opacity="1"
+                      markerMid={(c.isRedundantMainLine && !c.isDClassConnection) ? "url(#arrowBiMain)" : "none"}
+                      markerStart={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
+                      markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
                     />
                   ) : (
                     <path
@@ -555,9 +555,9 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeWidth="4"
                       strokeLinejoin="round"
                       fill="none"
-                      opacity="0.9"
-                      markerMid={c.isRedundantMainLine ? `url(#${mainArrowId})` : "none"}
-                      markerEnd={c.isRedundantMainLine ? "none" : `url(#${arrowId})`}
+                      opacity="1"
+                      markerMid={(c.isRedundantMainLine && !c.isDClassConnection) ? `url(#${mainArrowId})` : "none"}
+                      markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : `url(#${arrowId})`}
                     />
                   )}
                 </g>
@@ -598,8 +598,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   e.stopPropagation();
                 }}
               >
-                <rect x={(sl.x1 + sl.x2) / 2 - 28} y={sl.y - 8} width="56" height="16" rx="8" fill={sl.trackColor === 'orange' ? "#fff7ed" : sl.trackColor === 'blue' ? "#eff6ff" : "#ffffff"} stroke={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563eb" : "#cbd5e1"} strokeWidth="1" />
-                <text x={(sl.x1 + sl.x2) / 2} y={sl.y + 4} fill={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{sl.label}</text>
+                <rect x={(sl.x1 + sl.x2) / 2 - 28} y={sl.y - 8} width="56" height="16" rx="8" fill={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563ebff" : "#ffffff"} stroke={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563ebff" : "#cbd5e1"} strokeWidth="1" />
+                <text x={(sl.x1 + sl.x2) / 2} y={sl.y + 4} fill={sl.trackColor === 'orange' ? "#ffffff" : sl.trackColor === 'blue' ? "#ffffff" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{sl.label}</text>
               </g>
             ))}
             {renderData.blockLines.map((bl, i) => (
@@ -613,8 +613,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 }}
                 style={{ cursor: 'default' }}
               >
-                <rect x={(bl.x1 + bl.x2) / 2 - 28} y={bl.y - 8} width="56" height="16" rx="8" fill={bl.trackColor === 'orange' ? "#fff7ed" : bl.trackColor === 'blue' ? "#eff6ff" : "#ffffff"} stroke={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563eb" : "#cbd5e1"} strokeWidth="1" />
-                <text x={(bl.x1 + bl.x2) / 2} y={bl.y + 4} fill={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563eb" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{bl.label}</text>
+                <rect x={(bl.x1 + bl.x2) / 2 - 28} y={bl.y - 8} width="56" height="16" rx="8" fill={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563ebff" : "#ffffff"} stroke={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563ebff" : "#cbd5e1"} strokeWidth="1" />
+                <text x={(bl.x1 + bl.x2) / 2} y={bl.y + 4} fill={bl.trackColor === 'orange' ? "#ffffff" : bl.trackColor === 'blue' ? "#ffffff" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{bl.label}</text>
               </g>
             ))}
 
@@ -666,7 +666,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
           onContextMenu={(e) => e.preventDefault()}
         >
           <style>{`
-            .ctx-menu-hover:hover { background-color: #f1f5f9; color: #2563eb; }
+            .ctx-menu-hover:hover { background-color: #f1f5f9; color: #2563ebff; }
             .ctx-menu-item:hover .ctx-submenu { display: block !important; }
           `}</style>
           <div style={{ padding: '4px 16px', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', fontWeight: 'bold', color: '#64748b', fontSize: '12px' }}>
@@ -1135,7 +1135,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               return (
                 <>
                   <div style={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '4px' }}>{title} ({lineName})</div>
-                  <div>Signal: <span style={{ fontWeight: '500', color: '#2563eb' }}>{sig}</span></div>
+                  <div>Signal: <span style={{ fontWeight: '500', color: '#2563ebff' }}>{sig}</span></div>
                   <div>Speed: <span style={{ fontWeight: '500', color: '#16a34a' }}>{spdStr}</span></div>
                 </>
               );
@@ -1243,7 +1243,7 @@ function generateRenderData(layout) {
       });
     }
     mLines.sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
-    const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseInt(seqNum));
+    const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseFloat(seqNum));
 
     // Check adjacent stations to infer block direction if possible, else fallback
     if (mainLineIndex === 0) return 'blue';
@@ -1585,9 +1585,9 @@ function generateRenderData(layout) {
         const stnMainIdx = mLinesStn.findIndex(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
         const bsMainIdx = mLinesBs.findIndex(l => parseFloat(l.MANSEQNUMB) === bsLineNum);
 
-        const isRedundantMainLine = (stnMainIdx !== -1 && bsMainIdx !== -1 && stnMainIdx === bsMainIdx);
+        const isRedundantMainLine = (stnMainIdx !== -1 && bsMainIdx !== -1 && stnMainIdx === bsMainIdx) || adjacentStnIsDClass;
 
-        let connectionColor = (isLeftToRight ? '#2563eb' : '#ea580c');
+        let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
         if (isBidirectional || isMSync) {
           connectionColor = '#10b981'; // Green for sync
         }
@@ -1601,6 +1601,7 @@ function generateRenderData(layout) {
           isBidirectional: isBidirectional || isMSync,
           isMainLineConnection,
           isRedundantMainLine,
+          isDClassConnection: adjacentStnIsDClass,
           label: (isBidirectional || isMSync) ? `${stnLine.label} ↔ ${bsLine.label}` : isSend ? `${stnLine.label} → ${bsLine.label}` : `${stnLine.label} ← ${bsLine.label}`
         });
       }
@@ -1684,9 +1685,7 @@ function generateRenderData(layout) {
         }
 
         if (adjacentStnIsDClass) {
-          if ((leA.label === 'L2' && leB.label === 'L1') || (leA.label === 'L1' && leB.label === 'L2')) {
-            isUnwantedSlantTrack = true;
-          }
+          isUnwantedSlantTrack = true;
         }
 
         if (!isUnwantedSlantTrack) {
@@ -1757,8 +1756,7 @@ function generateRenderData(layout) {
     }
   };
 
-  addManualConnection('DXD', 3, 'CDSL', 2);
-  addManualConnection('CDSL', 2, 'SGAC', 3);
+
 
   return data;
 }

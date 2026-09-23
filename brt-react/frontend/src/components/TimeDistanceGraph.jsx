@@ -797,32 +797,6 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 }}>
                   Clear Sims
                 </button>
-                <button onClick={() => setShowJourneyTimeModal(true)} style={{
-                  padding: '6px 12px',
-                  background: '#8b5cf6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap'
-                }}>
-                  Journey Time
-                </button>
-                <button onClick={() => setShowDetentionSummaryModal(true)} style={{
-                  padding: '6px 12px',
-                  background: '#0891b2',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap'
-                }}>
-                  Detention Summary
-                </button>
               </>
             )}
           </div>
@@ -833,18 +807,18 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
       {/* Simulation Stats Modal */}
       {showSimStatsModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', width: '650px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '24px', width: '650px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '16px', position: 'relative' }}>
               <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Simulation Statistics</h3>
-              <button onClick={() => setShowSimStatsModal(false)} style={{ background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>×</button>
+              <button onClick={() => setShowSimStatsModal(false)} style={{ position: 'absolute', right: 0, background: 'transparent', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>×</button>
             </div>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f1f5f9' }}>
-                  <th style={{ padding: '12px', border: '1px solid #cbd5e1' }}>Statistics</th>
-                  <th style={{ padding: '12px', border: '1px solid #cbd5e1' }}>DOWN</th>
-                  <th style={{ padding: '12px', border: '1px solid #cbd5e1' }}>UP</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>Statistics</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>DOWN</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>UP</th>
                 </tr>
               </thead>
               <tbody>
@@ -871,28 +845,27 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         // Calculate approx distance
                         const startY = start.y;
                         const endY = end.y;
-                        const dist = Math.abs(endY - startY); // Using Y as proxy for distance or if we have real dist...
-                        // Better to use avg speed from the path segments if possible, but let's approximate
-                        totalDist += dist; // this is just px distance, real distance is in graphData
+                        const dist = Math.abs(endY - startY);
+
+                        totalDist += dist;
                       }
                       detCount += (p.detentionCount || 0);
                       totalDet += (p.totalDetention || 0);
                     });
 
-                    let avgTime = totalTime / paths.length; // in hours
+                    let avgTime = totalTime / paths.length;
 
 
 
                     return {
                       avgTime: (avgTime * 60).toFixed(0) + ' mins',
                       totalTrains: paths.length,
-                      avgSpeed: '-', // Need real distance
+                      avgSpeed: '-',
                       detCount: detCount,
                       totalDet: totalDet + ' mins'
                     };
                   };
 
-                  // Let's get real distance between simSource and simDest
                   let realDist = 0;
                   if (graphData && graphData.layoutStations) {
                     const s1 = graphData.layoutStations.find(s => s.code === simSource);
@@ -930,29 +903,45 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   return (
                     <>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Total Simulated Paths</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.totalTrains}</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.totalTrains}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold', textAlign: 'center' }}>Total Simulated Paths</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{fwdStats.totalTrains}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{bwdStats.totalTrains}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Average Journey Time</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.avgTime}</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.avgTime}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                          <button
+                            onClick={() => { setShowSimStatsModal(false); setShowJourneyTimeModal(true); }}
+                            style={{ padding: '6px 12px', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '5px', fontWeight: '600', cursor: 'pointer', fontSize: '12px', margin: '0 auto', display: 'inline-block' }}
+                            title="Click to view Hourly Journey Time Analysis"
+                          >
+                            Average Journey Time
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{fwdStats.avgTime}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{bwdStats.avgTime}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Average Speed</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.avgSpeed}</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.avgSpeed}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold', textAlign: 'center' }}>Average Speed</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{fwdStats.avgSpeed}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{bwdStats.avgSpeed}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Detention Count</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.detCount}</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.detCount}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold', textAlign: 'center' }}>Detention Count</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{fwdStats.detCount}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{bwdStats.detCount}</td>
                       </tr>
                       <tr>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>Total Detention</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{fwdStats.totalDet}</td>
-                        <td style={{ padding: '12px', border: '1px solid #cbd5e1' }}>{bwdStats.totalDet}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
+                          <button
+                            onClick={() => { setShowSimStatsModal(false); setShowDetentionSummaryModal(true); }}
+                            style={{ padding: '6px 12px', background: '#0891b2', color: 'white', border: 'none', borderRadius: '5px', fontWeight: '600', cursor: 'pointer', fontSize: '12px', margin: '0 auto', display: 'inline-block' }}
+                            title="Click to view Detention Summary"
+                          >
+                            Total Detention
+                          </button>
+                        </td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{fwdStats.totalDet}</td>
+                        <td style={{ padding: '12px', border: '1px solid #cbd5e1', textAlign: 'center' }}>{bwdStats.totalDet}</td>
                       </tr>
                     </>
                   );
@@ -984,22 +973,32 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               const bwdJourneyCounts = Array(24).fill(0);
 
               simulatedPaths.forEach(p => {
-                if (p.stops && p.stops.length > 0) {
+                if (p.stops && p.stops.length > 1) {
                   const start = p.stops[0];
-                  let depMins = start.absDepMins;
-                  if (depMins === undefined) {
-                    depMins = (start.depTime || 0) * 60;
+                  const end = p.stops[p.stops.length - 1];
+
+                  let startMins = start.absDepMins;
+                  if (startMins === undefined) {
+                    startMins = (start.depTime || 0) * 60;
                   }
 
-                  let hourIdx = Math.floor((depMins / 60) % 24);
-                  if (hourIdx < 0) hourIdx += 24;
-                  if (hourIdx < 0) hourIdx = 0;
-                  if (hourIdx > 23) hourIdx = 23;
+                  let endMins = end.absArrMins;
+                  if (endMins === undefined) {
+                    endMins = (end.arrTime || 0) * 60;
+                  }
 
-                  if (p.isForward) {
-                    fwdJourneyCounts[hourIdx]++;
-                  } else {
-                    bwdJourneyCounts[hourIdx]++;
+                  const durationMins = endMins - startMins;
+
+                  if (durationMins >= 0) {
+                    let hourIdx = Math.floor(durationMins / 60);
+                    if (hourIdx < 0) hourIdx = 0;
+                    if (hourIdx > 23) hourIdx = 23;
+
+                    if (p.isForward) {
+                      fwdJourneyCounts[hourIdx]++;
+                    } else {
+                      bwdJourneyCounts[hourIdx]++;
+                    }
                   }
                 }
               });
@@ -1011,17 +1010,17 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f1f5f9' }}>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>Hours</th>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{fwdLabel}</th>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{bwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>Hours</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>{fwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>{bwdLabel}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {HOURLY_BUCKETS.map((bucket, idx) => (
                       <tr key={`jt-${bucket}`} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>{bucket}</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{fwdJourneyCounts[idx]}</td>
-                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{bwdJourneyCounts[idx]}</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155', textAlign: 'center' }}>{bucket}</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a', textAlign: 'center' }}>{fwdJourneyCounts[idx]}</td>
+                        <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a', textAlign: 'center' }}>{bwdJourneyCounts[idx]}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -1074,9 +1073,9 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#f1f5f9' }}>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>Stations</th>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{fwdLabel}</th>
-                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold' }}>{bwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>Stations</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>{fwdLabel}</th>
+                      <th style={{ padding: '12px', border: '1px solid #cbd5e1', color: '#1e293b', fontWeight: 'bold', textAlign: 'center' }}>{bwdLabel}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1086,9 +1085,9 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                       const bwdDet = Math.round(bwdStationDetention[code] || 0);
                       return (
                         <tr key={`det-${code}-${idx}`} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155' }}>{code}</td>
-                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{`${fwdDet} min`}</td>
-                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a' }}>{`${bwdDet} min`}</td>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', fontWeight: '600', color: '#334155', textAlign: 'center' }}>{code}</td>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a', textAlign: 'center' }}>{`${fwdDet} min`}</td>
+                          <td style={{ padding: '8px 12px', border: '1px solid #cbd5e1', color: '#0f172a', textAlign: 'center' }}>{`${bwdDet} min`}</td>
                         </tr>
                       );
                     })}
@@ -1119,11 +1118,12 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
             {/* Scrollable Form Body */}
             <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
               {/* Direction checkboxes — dynamic labels in a single line (50/50 space) */}
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>
+              {/* Row 1: Routes */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>
                   Routes <span style={{ color: '#ef4444' }}>*</span>
                 </label>
-                <div style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
                   {[
                     { dir: 'forward', label: `${graphData?.layoutStations?.[0]?.name || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || 'BINA'}` },
                     { dir: 'backward', label: `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || 'BINA'} → ${graphData?.layoutStations?.[0]?.name || 'KOTA'}` }
@@ -1137,11 +1137,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                           minWidth: 0,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '13px',
+                          gap: '6px',
+                          fontSize: '12px',
                           color: '#334155',
                           cursor: 'pointer',
-                          padding: '10px 12px',
+                          padding: '6px 10px',
                           borderRadius: '6px',
                           border: `1px solid ${isChecked ? '#16a34a' : '#cbd5e1'}`,
                           background: isChecked ? '#f0fdf4' : '#f8fafc',
@@ -1156,7 +1156,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                             if (e.target.checked) setSimDirections(prev => [...prev, dir]);
                             else setSimDirections(prev => prev.filter(d => d !== dir));
                           }}
-                          style={{ accentColor: '#16a34a', width: '16px', height: '16px', flexShrink: 0 }}
+                          style={{ accentColor: '#16a34a', width: '14px', height: '14px', flexShrink: 0 }}
                         />
                         <span style={{ fontWeight: isChecked ? '600' : '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {label}
@@ -1167,11 +1167,12 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '8px' }}>
+              {/* Row 2: Operating Days */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
                   Operating Days
                 </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', backgroundColor: '#f8fafc', padding: '6px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', backgroundColor: '#f8fafc', padding: '4px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   {[
                     { label: 'All Days', value: 'All' },
                     { label: 'Mon', value: 'Mon' },
@@ -1194,17 +1195,15 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         style={{
                           flex: '1 1 auto',
                           textAlign: 'center',
-                          padding: '7px 12px',
+                          padding: '5px 8px',
                           borderRadius: '6px',
                           cursor: 'pointer',
-                          fontSize: '12px',
+                          fontSize: '11px',
                           fontWeight: isSelected ? '700' : '600',
                           backgroundColor: isSelected ? '#2563eb' : (isHovered ? '#dbeafe' : '#eff6ff'),
                           color: isSelected ? '#ffffff' : '#1d4ed8',
                           border: isSelected ? '1px solid #1d4ed8' : (isHovered ? '1px solid #3b82f6' : '1px solid #93c5fd'),
-                          boxShadow: isSelected
-                            ? '0 2px 5px rgba(37, 99, 235, 0.35)'
-                            : (isHovered ? '0 1px 3px rgba(37, 99, 235, 0.15)' : 'none'),
+                          boxShadow: isSelected ? '0 2px 5px rgba(37, 99, 235, 0.35)' : 'none',
                           transition: 'all 0.15s ease',
                           outline: 'none',
                           userSelect: 'none'
@@ -1217,79 +1216,115 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
               </div>
 
-              {/* Time Controls: Departure From, Departure Upto & Journey Completion Time */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>
-                    Departure From <span style={{ color: '#ef4444' }}>*</span>
+              {/* Row 3: Departure From/Upto, Journey Completion, Headway */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Dep From <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
                     value={simTimeFrom}
                     onChange={e => setSimTimeFrom(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>
-                    Departure Upto <span style={{ color: '#ef4444' }}>*</span>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Dep Upto <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
                     value={simTimeUpto}
                     onChange={e => setSimTimeUpto(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
                   />
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px', whiteSpace: 'nowrap' }}>
-                    Journey Completion (HH:MM)
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Completion
                   </label>
                   <input
                     type="time"
                     value={simCompletionTime}
                     onChange={e => setSimCompletionTime(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
                   />
                 </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>Headway (mins)</label>
-                  <select value={simHeadway} onChange={e => setSimHeadway(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Headway(m)</label>
+                  <select value={simHeadway} onChange={e => setSimHeadway(e.target.value)} style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
                     {[...Array(15)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
                   </select>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>Speed (kmph)</label>
-                  <select 
-                    value={simSpeed} 
+              </div>
+
+              {/* Row 4: Speed, Acceleration, Deceleration, Block Op Time */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ flex: '1.2 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Speed</label>
+                  <select
+                    value={simSpeed}
                     onChange={e => {
                       const val = e.target.value;
                       setSimSpeed(val);
                       if (val === 'coaching') setShowCoachingConfigModal(true);
                       if (val === 'goods') setShowGoodsConfigModal(true);
-                    }} 
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                    }}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', textOverflow: 'ellipsis' }}
                   >
-                    <option value="coaching">Default (Coaching Speed)</option>
-                    <option value="goods">Default (Goods Speed)</option>
+                    <option value="coaching">Default (Coaching)</option>
+                    <option value="goods">Default (Goods)</option>
                     {[30, 45, 60, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160].map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Accel (m:s)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="00:00"
+                    value={simAccelTime}
+                    onChange={e => setSimAccelTime(formatMMSS(e.target.value, simAccelTime))}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Decel (m:s)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="00:00"
+                    value={simDecelTime}
+                    onChange={e => setSimDecelTime(formatMMSS(e.target.value, simDecelTime))}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op(m)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    value={simBlockOperatingTime}
+                    onChange={e => setSimBlockOperatingTime(e.target.value)}
+                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: '#fff' }}
+                  />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>Max Detention (hrs)</label>
-                  <select value={simMaxDetention} onChange={e => setSimMaxDetention(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
+              {/* Additional Options (Max Detention & Block Corridor) */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', alignItems: 'flex-end' }}>
+                <div style={{ flex: '0 0 120px' }}>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px' }}>Max Det. (hrs)</label>
+                  <select value={simMaxDetention} onChange={e => setSimMaxDetention(e.target.value)} style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
                     {[1, 2, 3, 4, 5].map(h => <option key={h} value={h}>{h}</option>)}
                   </select>
                 </div>
-
-                <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', paddingBottom: '10px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', fontWeight: 'bold' }}>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', marginTop: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer', fontWeight: 'bold' }}>
                     <input
                       type="checkbox"
                       checked={simBlockCorridor}
@@ -1299,46 +1334,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                     Block Corridor
                   </label>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>Block Op Time (mins)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={simBlockOperatingTime}
-                    onChange={e => setSimBlockOperatingTime(e.target.value)}
-                    disabled={!simBlockCorridor}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: !simBlockCorridor ? '#f1f5f9' : '#fff' }}
-                  />
-                </div>
-              </div>
-
-              {/* Acceleration & Deceleration Time (mm:ss) */}
-              <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>
-                    Acceleration Time (mm:ss)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="00:00"
-                    value={simAccelTime}
-                    onChange={e => setSimAccelTime(formatMMSS(e.target.value, simAccelTime))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginBottom: '6px' }}>
-                    Deceleration Time (mm:ss)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="00:00"
-                    value={simDecelTime}
-                    onChange={e => setSimDecelTime(formatMMSS(e.target.value, simDecelTime))}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
-                  />
-                </div>
+                <div style={{ flex: 2 }}></div>
               </div>
 
 
@@ -1451,7 +1447,14 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                                     checked={isChecked}
                                     onChange={(e) => {
                                       if (e.target.checked) {
-                                        setSimStops(prev => [...prev.filter(s => s.code !== stn.code), { code: stn.code, halt: 2 }]);
+                                        setSimStops(prev => {
+                                          const next = [...prev.filter(s => s.code !== stn.code), { code: stn.code, halt: 2 }];
+                                          return next.sort((a, b) => {
+                                            const idxA = graphData.layoutStations.findIndex(ls => ls.code === a.code);
+                                            const idxB = graphData.layoutStations.findIndex(ls => ls.code === b.code);
+                                            return idxA - idxB;
+                                          });
+                                        });
                                       } else {
                                         setSimStops(prev => prev.filter(s => s.code !== stn.code));
                                       }
@@ -1797,7 +1800,8 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
   const marginLeft = 100;
   const marginRight = 200;
 
-  const chartWidth = Math.max(containerWidth - marginLeft - marginRight, 400);
+  const baseChartWidth = Math.max(containerWidth - marginLeft - marginRight, 400);
+  const chartWidth = windowMode === '7d' ? baseChartWidth * 0.85 : baseChartWidth;
 
   const isSpecificDay = typeof windowMode === 'string' && windowMode.startsWith('day-');
   const dayIndex = isSpecificDay ? parseInt(windowMode.split('-')[1]) : 0;
@@ -2493,36 +2497,40 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
 
 
                     {/* Start Label with Stroke for Print Readability */}
-                    <text
-                      x="0"
-                      y="0"
-                      transform={`translate(${startX}, ${startY}) rotate(${startAngle}) translate(12, -4)`}
-                      fill="#ffffff"
-                      stroke="#ffffff"
-                      strokeWidth="3"
-                      strokeLinejoin="round"
-                      fontSize={isHovered ? "12" : (maxTime === 168 ? "9" : "10")}
-                      fontWeight="bold"
-                      textAnchor="start"
-                      opacity={1}
-                    >
-                      {train.isSimulated ? train.name : train.originalTrainNo}
-                    </text>
-                    <text
-                      x="0"
-                      y="0"
-                      transform={`translate(${startX}, ${startY}) rotate(${startAngle}) translate(12, -4)`}
-                      fill={train.color}
-                      fontSize={isHovered ? "12" : (maxTime === 168 ? "9" : "10")}
-                      fontWeight="bold"
-                      textAnchor="start"
-                      opacity={1}
-                    >
-                      {train.isSimulated ? train.name : train.originalTrainNo}
-                    </text>
+                    {!train.isSimulated && (
+                      <>
+                        <text
+                          x="0"
+                          y="0"
+                          transform={`translate(${startX}, ${startY}) rotate(${startAngle}) translate(12, -4)`}
+                          fill="#ffffff"
+                          stroke="#ffffff"
+                          strokeWidth="3"
+                          strokeLinejoin="round"
+                          fontSize={isHovered ? "12" : (maxTime === 168 ? "9" : "10")}
+                          fontWeight="bold"
+                          textAnchor="start"
+                          opacity={1}
+                        >
+                          {train.originalTrainNo}
+                        </text>
+                        <text
+                          x="0"
+                          y="0"
+                          transform={`translate(${startX}, ${startY}) rotate(${startAngle}) translate(12, -4)`}
+                          fill={train.color}
+                          fontSize={isHovered ? "12" : (maxTime === 168 ? "9" : "10")}
+                          fontWeight="bold"
+                          textAnchor="start"
+                          opacity={1}
+                        >
+                          {train.originalTrainNo}
+                        </text>
+                      </>
+                    )}
 
                     {/* End Label with Stroke */}
-                    {train.stops.length >= 2 && (
+                    {!train.isSimulated && train.stops.length >= 2 && (
                       <>
                         <text
                           x="0"
@@ -2537,7 +2545,7 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
                           textAnchor="end"
                           opacity={1}
                         >
-                          {train.isSimulated ? train.name : train.originalTrainNo}
+                          {train.originalTrainNo}
                         </text>
                         <text
                           x="0"
@@ -2549,7 +2557,7 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
                           textAnchor="end"
                           opacity={1}
                         >
-                          {train.isSimulated ? train.name : train.originalTrainNo}
+                          {train.originalTrainNo}
                         </text>
                       </>
                     )}

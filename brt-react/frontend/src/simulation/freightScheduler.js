@@ -605,8 +605,7 @@ export async function runSimulation({
           // - Apply at every intermediate actual stop.
           //   A station is an actual stop if it has a scheduled halt > 0 OR if it was detained there.
           const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
-          const stn1Detention = i > 0 ? departAttempt[i] - waitStartedAt[i] : 0;
-          const stn1IsActualStop = i > 0 && (stn1Halt > 0 || stn1Detention > 0);
+          const stn1IsActualStop = i > 0 && (stn1Halt > 0 || detainedStations.has(block.stn1.code));
 
           if ((i === 0 || stn1IsActualStop) && accelPenaltyMins > 0) {
             accelMins = accelPenaltyMins;
@@ -887,16 +886,28 @@ export async function runSimulation({
         dReason = path[idx + 1].detentionReason;
         haltMins = path[idx + 1].normalHalt;
       }
-      stops.push({
-        seq: idx + 2, zone: '-', division: '-', station: seg.endStn,
-        arrTime: (arrMins - startDayIdx * 24 * 60) / 60, depTime: (depMins - startDayIdx * 24 * 60) / 60,
-        absArrMins: arrMins, absDepMins: depMins,
-        arrStr: formatTimeMins(arrMins), depStr: isDestination ? 'Destination' : formatTimeMins(depMins),
-        dayOfSrvc: getDay(arrMins), weekDay: getWeekDay(arrMins),
-        y: stations.find(s => s.code === seg.endStn)?.y || 0,
-        normalHalt: haltMins, detentionMinutes: detentionMins, detentionReason: dReason,
-        stationLineId: seg.endLineId
-      });
+
+      const lastStop = stops.length > 0 ? stops[stops.length - 1] : null;
+      if (lastStop && lastStop.station === seg.endStn) {
+        lastStop.depTime = (depMins - startDayIdx * 24 * 60) / 60;
+        lastStop.absDepMins = depMins;
+        lastStop.depStr = isDestination ? 'Destination' : formatTimeMins(depMins);
+        lastStop.normalHalt = (lastStop.normalHalt || 0) + haltMins;
+        lastStop.detentionMinutes = (lastStop.detentionMinutes || 0) + detentionMins;
+        if (dReason && dReason !== 'NONE') lastStop.detentionReason = dReason;
+        lastStop.stationLineId = seg.endLineId;
+      } else {
+        stops.push({
+          seq: stops.length + 1, zone: '-', division: '-', station: seg.endStn,
+          arrTime: (arrMins - startDayIdx * 24 * 60) / 60, depTime: (depMins - startDayIdx * 24 * 60) / 60,
+          absArrMins: arrMins, absDepMins: depMins,
+          arrStr: formatTimeMins(arrMins), depStr: isDestination ? 'Destination' : formatTimeMins(depMins),
+          dayOfSrvc: getDay(arrMins), weekDay: getWeekDay(arrMins),
+          y: stations.find(s => s.code === seg.endStn)?.y || 0,
+          normalHalt: haltMins, detentionMinutes: detentionMins, detentionReason: dReason,
+          stationLineId: seg.endLineId
+        });
+      }
     });
     let daysStr = '1111111';
     if (simDay === 'Mon') daysStr = '1000000';

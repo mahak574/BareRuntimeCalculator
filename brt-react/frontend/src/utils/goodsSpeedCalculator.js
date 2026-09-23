@@ -1,7 +1,7 @@
 import { parquetReadObjects } from 'hyparquet';
 import { decompress } from 'fzstd';
 import kotaParquetUrl from '../data/KOTA-APR-MAY-26.parquet?url';
-
+import bplParquetUrl from '../data/BPL-APR-MAY-26.parquet?url';
 /**
  * ZSTD decompressor wrapper for hyparquet.
  */
@@ -10,19 +10,15 @@ function zstdDecompress(input, _outputLength) {
 }
 
 /**
- * Read KOTA Parquet file and process rows.
- *
- * IMPORTANT:
- * - Only KOTA Parquet is used.
- * - No BSP file is used.
+ * Read a Parquet file and process rows.
  */
-async function parseKotaParquet(url, onRow) {
+async function parseParquetFile(url, onRow) {
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(
-        `Failed to load KOTA Parquet: ${response.status} ${response.statusText}`
+        `Failed to load Parquet: ${response.status} ${response.statusText}`
       );
     }
 
@@ -250,6 +246,40 @@ function madFilteredMean(speeds) {
 }
 
 
+/**
+ * Find a contiguous path of physical sections between two stations.
+ */
+function findPathInLayout(fromStn, toStn, physicalSections) {
+  // Search forward
+  for (let i = 0; i < physicalSections.length; i++) {
+    if (physicalSections[i].FROM_STATION === fromStn) {
+      const path = [];
+      for (let j = i; j < physicalSections.length; j++) {
+        path.push(physicalSections[j]);
+        if (physicalSections[j].TO_STATION === toStn) {
+          return path;
+        }
+      }
+    }
+  }
+
+  // Search backward
+  for (let i = physicalSections.length - 1; i >= 0; i--) {
+    if (physicalSections[i].TO_STATION === fromStn) {
+      const path = [];
+      for (let j = i; j >= 0; j--) {
+        path.push(physicalSections[j]);
+        if (physicalSections[j].FROM_STATION === toStn) {
+          return path;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+
 export async function calculateGoodsSpeedConfig(
   routeInfo,
   layout
@@ -438,180 +468,128 @@ export async function calculateGoodsSpeedConfig(
           .toUpperCase();
 
       if (!csvBlock) {
-
-        reject(
-          'blank_block_section'
-        );
-
+        reject('blank_block_section');
         return;
       }
 
-      const physSection =
-        blockSectionLookup[
-        csvBlock
-        ];
+      let derivedSections = [];
+      const physSection = blockSectionLookup[csvBlock];
 
-      if (!physSection) {
-
-        reject(
-          `not_in_layout:${csvBlock}`
-        );
-
-        return;
+      if (physSection) {
+        derivedSections.push({
+          section: physSection,
+          distanceRatio: 1.0
+        });
+      } else if (csvBlock.includes('-')) {
+        const parts = csvBlock.split('-');
+        if (parts.length === 2) {
+          const fromStn = parts[0].trim();
+          const toStn = parts[1].trim();
+          const path = findPathInLayout(fromStn, toStn, physicalSections);
+          if (path && path.length > 0) {
+            const totalDist = path.reduce((sum, p) => sum + (parseFloat(p.DISTANCE_KM) || 0), 0);
+            if (totalDist > 0) {
+              path.forEach(p => {
+                derivedSections.push({
+                  section: p,
+                  distanceRatio: (parseFloat(p.DISTANCE_KM) || 0) / totalDist
+                });
+              });
+            }
+          }
+        }
       }
 
-
-      // ----------------------------------------------------------
-      // Section distance
-      // ----------------------------------------------------------
-
-      const sectionDistanceKm =
-        physSection.DISTANCE_KM;
-
-      if (
-        !sectionDistanceKm ||
-        sectionDistanceKm <= 0
-      ) {
-
-        reject(
-          `zero_distance:${csvBlock}`
-        );
-
+      if (derivedSections.length === 0) {
+        reject(`not_in_layout:${csvBlock}`);
         return;
       }
-
 
       // ----------------------------------------------------------
       // Running time
       // ----------------------------------------------------------
 
-      const canRunningTimeSec =
-        parseFloat(
-          row.canrunningtime
-        );
+      const canRunningTimeSec = parseFloat(row.canrunningtime);
 
-      if (
-        Number.isNaN(
-          canRunningTimeSec
-        ) ||
-        canRunningTimeSec <= 0
-      ) {
-
-        reject(
-          `bad_runtime:${csvBlock}`
-        );
-
+      if (Number.isNaN(canRunningTimeSec) || canRunningTimeSec <= 0) {
+        reject(`bad_runtime:${csvBlock}`);
         return;
       }
-
 
       // ----------------------------------------------------------
       // Direction
       // ----------------------------------------------------------
 
-      const dirRaw =
-        String(
-          row.cavdrtn ?? ''
-        )
-          .trim()
-          .toUpperCase();
-
+      const dirRaw = String(row.cavdrtn ?? '').trim().toUpperCase();
       let dirKey = null;
 
-      if (
-        dirRaw === 'DN' ||
-        dirRaw === 'FORWARD' ||
-        dirRaw === 'DOWN'
-      ) {
-
+      if (dirRaw === 'DN' || dirRaw === 'FORWARD' || dirRaw === 'DOWN') {
         dirKey = 'forward';
-
-      } else if (
-        dirRaw === 'UP' ||
-        dirRaw === 'BACKWARD'
-      ) {
-
+      } else if (dirRaw === 'UP' || dirRaw === 'BACKWARD') {
         dirKey = 'backward';
       }
 
       if (!dirKey) {
-
-        reject(
-          `unknown_direction:${dirRaw}`
-        );
-
+        reject(`unknown_direction:${dirRaw}`);
         return;
       }
 
-
       // ----------------------------------------------------------
-      // Speed calculation
-      // ----------------------------------------------------------
-
-      const speedKmH =
-        sectionDistanceKm *
-        3600 /
-        canRunningTimeSec;
-
-      if (
-        speedKmH < 1 ||
-        speedKmH > 160
-      ) {
-
-        reject(
-          `speed_oor:${csvBlock}:${speedKmH.toFixed(1)}`
-        );
-
-        return;
-      }
-
-
-      // ----------------------------------------------------------
-      // Accumulate sample
+      // Process Derived Sections
       // ----------------------------------------------------------
 
-      const canonicalCode =
-        physSection.BLOCK_SECTION_CODE;
+      derivedSections.forEach(ds => {
+        const currentPhysSection = ds.section;
+        const sectionDistanceKm = parseFloat(currentPhysSection.DISTANCE_KM) || 0;
 
-      const aggKey =
-        `${dirKey}_${canonicalCode}_${loadType}`;
+        if (sectionDistanceKm <= 0) {
+          reject(`zero_distance:${currentPhysSection.BLOCK_SECTION_CODE}`);
+          return;
+        }
 
-      if (!speedSamples[aggKey]) {
+        const apportionedRunningTimeSec = canRunningTimeSec * ds.distanceRatio;
+        const speedKmH = (sectionDistanceKm * 3600) / apportionedRunningTimeSec;
 
-        speedSamples[aggKey] = {
+        if (speedKmH < 1 || speedKmH > 160) {
+          reject(`speed_oor:${currentPhysSection.BLOCK_SECTION_CODE}:${speedKmH.toFixed(1)}`);
+          return;
+        }
 
-          direction:
-            dirKey,
+        // ----------------------------------------------------------
+        // Accumulate sample
+        // ----------------------------------------------------------
 
-          blockCode:
-            canonicalCode,
+        const canonicalCode = currentPhysSection.BLOCK_SECTION_CODE;
+        const aggKey = `${dirKey}_${canonicalCode}_${loadType}`;
 
-          loadType,
+        if (!speedSamples[aggKey]) {
+          speedSamples[aggKey] = {
+            direction: dirKey,
+            blockCode: canonicalCode,
+            loadType,
+            distanceKm: sectionDistanceKm,
+            speeds: [],
+            rawCount: 0
+          };
+        }
 
-          distanceKm:
-            sectionDistanceKm,
-
-          speeds: [],
-
-          rawCount: 0
-        };
-      }
-
-      speedSamples[aggKey]
-        .speeds
-        .push(speedKmH);
-
-      speedSamples[aggKey]
-        .rawCount++;
+        speedSamples[aggKey].speeds.push(speedKmH);
+        speedSamples[aggKey].rawCount++;
+      });
     };
 
 
     // ============================================================
-    // STEP 6: Read ONLY KOTA PARQUET
+    // STEP 6: Read Parquet Files
     // ============================================================
 
-    await parseKotaParquet(
+    await parseParquetFile(
       kotaParquetUrl,
+      processRow
+    );
+
+    await parseParquetFile(
+      bplParquetUrl,
       processRow
     );
 
