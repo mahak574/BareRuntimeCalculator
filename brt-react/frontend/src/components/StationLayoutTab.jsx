@@ -215,7 +215,6 @@ export default function StationLayoutTab() {
           linesArray.splice(idx, 1);
         }
 
-        // Also remove connections that reference this block line
         if (newData.sheets.Connections) {
           const bsLineNum = parseInt(originalLine.MANBSLINENUMB);
           const cleanBsCode = String(originalLine.MAVBLCKSCTN || bsCode || '').trim();
@@ -227,7 +226,6 @@ export default function StationLayoutTab() {
             const matchesCode = cleanC === cleanBsCode || cleanC === reversedBsCode;
             const cNum = parseInt(c.MANBSLINENUMB);
             const matchesLine = !isNaN(bsLineNum) && !isNaN(cNum) && cNum === bsLineNum;
-            // Only remove if it genuinely matches this exact line in this exact block section
             return !(matchesCode && matchesLine);
           });
         }
@@ -270,8 +268,8 @@ export default function StationLayoutTab() {
           (options && options.lineCategory)
             ? options.lineCategory
             : (templateCategory === 'M' || templateCategory === 'MAIN'
-                ? ''
-                : templateCategory);
+              ? ''
+              : templateCategory);
 
         const newLine = {
           ...templateLine,
