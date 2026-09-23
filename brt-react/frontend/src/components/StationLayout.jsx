@@ -695,6 +695,17 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   position: 'absolute', top: 0, left: '100%', backgroundColor: '#fff',
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '120px', display: 'none'
                 }}>
+                  {/*
+                    IMPORTANT: "Add Main Line" (Top/Bottom) must NOT create a connected main line.
+                    It must create a brand new, fully independent block-section line with
+                    NO auto-generated connections to any station/other block line.
+                    We signal this to the parent handler (onModifyLayout) via two extra
+                    payload flags:
+                      - lineCategory: 'INDEPENDENT'  -> parent must NOT set MACLINECATEGORY to 'M'/'MAIN'
+                      - skipConnections: true        -> parent must NOT auto-create any connections entry
+                    The actual enforcement of these flags lives in the onModifyLayout handler
+                    (outside this file) - it must respect them when constructing the new line object.
+                  */}
                   <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter Block Section Line Name:");
                     if (name) {
@@ -703,7 +714,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Duplicate name. This line already exists.");
                       } else {
-                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, { position: 'top', direction: 'BOTH', lineName: name });
+                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, {
+                          position: 'top',
+                          direction: 'BOTH',
+                          lineName: name,
+                          lineCategory: 'INDEPENDENT',
+                          skipConnections: true
+                        });
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
@@ -716,7 +733,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       if (exists) {
                         window.alert("Duplicate name. This line already exists.");
                       } else {
-                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, { position: 'bottom', direction: 'BOTH', lineName: name });
+                        if (onModifyLayout) onModifyLayout('block', 'add', contextMenu.data?.code, {
+                          position: 'bottom',
+                          direction: 'BOTH',
+                          lineName: name,
+                          lineCategory: 'INDEPENDENT',
+                          skipConnections: true
+                        });
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
@@ -1181,7 +1204,7 @@ function generateRenderData(layout) {
         if (lines.length === 0) {
           lines = bs.lines.filter(l => {
             const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-            return cat !== 'LOOP';
+            return cat !== 'LOOP' && cat !== 'INDEPENDENT';
           });
         }
       }
@@ -1214,7 +1237,10 @@ function generateRenderData(layout) {
       return cat === 'M' || cat === 'MAIN';
     });
     if (mLines.length === 0) {
-      mLines = bs.lines.filter(l => String(l.MACLINECATEGORY || '').trim().toUpperCase() !== 'LOOP');
+      mLines = bs.lines.filter(l => {
+        const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
+        return cat !== 'LOOP' && cat !== 'INDEPENDENT';
+      });
     }
     mLines.sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
     const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseInt(seqNum));
@@ -1606,7 +1632,7 @@ function generateRenderData(layout) {
           if (lines.length === 0) {
             lines = bs.lines.filter(l => {
               const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-              return cat !== 'LOOP';
+              return cat !== 'LOOP' && cat !== 'INDEPENDENT';
             });
           }
         }

@@ -267,9 +267,11 @@ export default function StationLayoutTab() {
           templateLine.MACLINECATEGORY || ''
         ).trim().toUpperCase();
         const safeCategory =
-          templateCategory === 'M' || templateCategory === 'MAIN'
-            ? ''
-            : templateCategory;
+          (options && options.lineCategory)
+            ? options.lineCategory
+            : (templateCategory === 'M' || templateCategory === 'MAIN'
+                ? ''
+                : templateCategory);
 
         const newLine = {
           ...templateLine,
