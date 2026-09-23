@@ -28,6 +28,8 @@ export async function runSimulation({
   simTrainLoadType,
   simAccelTime,
   simDecelTime,
+  simBlockCorridor,
+  simBlockOperatingTime,
   simStops,
   simDirections,
   abortSimRef,
@@ -103,6 +105,7 @@ export async function runSimulation({
   };
   const accelPenaltyMins = simAccelTime ? Math.max(0, parseTimeInput(simAccelTime)) : 0;
   const decelPenaltyMins = simDecelTime ? Math.max(0, parseTimeInput(simDecelTime)) : 0;
+  const blockOpTime = simBlockOperatingTime ? parseInt(simBlockOperatingTime) : 0;
   const STATION_SAFETY_MARGIN = 5;
 
   const simStopsMap = new Map(simStops.map(s => [s.code, s.halt]));
@@ -270,7 +273,7 @@ export async function runSimulation({
       }
 
       // Physical occupancy overlap (Time-window overlap)
-      if ((segDep - hwMargin) < arrMins && (segArr + hwMargin) > depMins) {
+      if ((segDep - hwMargin - blockOpTime) < arrMins && (segArr + hwMargin + blockOpTime) > depMins) {
         if (cand.isSameDir) {
           sameDirOverlaps++;
         } else {
@@ -308,7 +311,7 @@ export async function runSimulation({
             if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) automaticSeparationViolation = true;
           }
 
-          if ((segDep - hwMargin) < arrMins && (segArr + hwMargin) > depMins) {
+          if ((segDep - hwMargin - blockOpTime) < arrMins && (segArr + hwMargin + blockOpTime) > depMins) {
             if (same) {
               sameDirOverlaps++;
             } else {
@@ -557,8 +560,25 @@ export async function runSimulation({
 
         if (stationConflictFound) {
           diagnostics.backtrackCount++;
-          for (let k = i; k < n; k++) departAttempt[k] = null;
-          if (i > 0) departAttempt[i - 1] += 1;
+          if (i === 0) {
+            return null; // Cannot backtrack before origin
+          }
+          for (let k = i; k < n; k++) {
+            departAttempt[k] = null;
+            waitStartedAt[k] = null;
+            if (k > i) arrivalAt[k] = null;
+            if (k >= i && blockData[k]) {
+              detainedStations.delete(blockData[k].stn1.code);
+              detainedStations.delete(blockData[k].stn2.code);
+            }
+          }
+          for (let k = i - 1; k < n - 1; k++) {
+            hopResult[k] = null;
+            if (conflictReasons[k]) conflictReasons[k] = null;
+          }
+          i -= 1;
+          departAttempt[i] += 1;
+          detentionCount++;
           break;
         }
 
@@ -605,7 +625,7 @@ export async function runSimulation({
           // - Apply at every intermediate actual stop.
           //   A station is an actual stop if it has a scheduled halt > 0 OR if it was detained there.
           const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
-          const stn1IsActualStop = i > 0 && (stn1Halt > 0 || detainedStations.has(block.stn1.code));
+          const stn1IsActualStop = i > 0 && (stn1Halt > 0 || departAttempt[i] > waitStartedAt[i] || detainedStations.has(block.stn1.code));
 
           if ((i === 0 || stn1IsActualStop) && accelPenaltyMins > 0) {
             accelMins = accelPenaltyMins;
@@ -730,10 +750,10 @@ export async function runSimulation({
             }
             for (let k = i - 1; k < n - 1; k++) {
               hopResult[k] = null;
-              conflictReasons[k] = null;
+              if (conflictReasons[k]) conflictReasons[k] = null;
             }
             i -= 1;
-            continue; // Re-evaluate i-1, now stn2IsActualStop will be true
+            break; // Re-evaluate i-1, now stn2IsActualStop will be true
           }
 
           if (waitedHere > maxDetentionMins) {
@@ -743,10 +763,14 @@ export async function runSimulation({
               departAttempt[k] = null;
               waitStartedAt[k] = null;
               if (k > i) arrivalAt[k] = null;
+              if (k >= i && blockData[k]) {
+                detainedStations.delete(blockData[k].stn1.code);
+                detainedStations.delete(blockData[k].stn2.code);
+              }
             }
             for (let k = i; k < n - 1; k++) {
               hopResult[k] = null;
-              conflictReasons[k] = null;
+              if (conflictReasons[k]) conflictReasons[k] = null;
             }
 
             i -= 1;
@@ -754,6 +778,7 @@ export async function runSimulation({
               departAttempt[i] += 1;
               detentionCount++;
             }
+            break;
           }
 
           if (i >= 0) {
