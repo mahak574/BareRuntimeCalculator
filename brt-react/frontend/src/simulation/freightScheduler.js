@@ -12,8 +12,8 @@ export async function runSimulation({
   layout,
   layoutStations,
   canonicalTrains = [],
-  simSource,          // explicit: user-selected source station code
-  simDest,            // explicit: user-selected destination station code
+  simSource,
+  simDest,
   scheduleData,
   stationLines = [],
   simDay,
@@ -33,10 +33,9 @@ export async function runSimulation({
   simStops,
   simDirections,
   abortSimRef,
-  simulatedPaths = [], // existing simulated paths
+  simulatedPaths = [],
   debug = false
 }) {
-  // Helper to format time strings
   const formatTimeMins = mins => {
     const totalSecs = Math.round(mins * 60);
     const h = Math.floor((totalSecs % (24 * 3600)) / 3600);
@@ -44,10 +43,6 @@ export async function runSimulation({
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
   };
 
-  // ─── Use the explicitly-passed layoutStations ─────────────────────────────
-  // layoutStations is now received as a parameter from the React component.
-  // It must NOT be referenced from module scope (there is no such global).
-  // The caller (TimeDistanceGraph) passes graphData.layoutStations.
   if (!layoutStations || layoutStations.length < 2) {
     console.error('runSimulation: layoutStations not provided or too short.');
     return [];
@@ -65,10 +60,8 @@ export async function runSimulation({
 
   let goodsLogCount = 0;
 
-  // Prepare data needed for simulation
   const abort = abortSimRef;
   abort.current = false;
-  // Convert time strings to minutes
   let startDayIdx = 0;
   if (simDay === 'Tue') startDayIdx = 1;
   else if (simDay === 'Wed') startDayIdx = 2;
@@ -110,7 +103,6 @@ export async function runSimulation({
 
   const simStopsMap = new Map(simStops.map(s => [s.code, s.halt]));
 
-  // Helper functions (copied from component)
   const getStationSpeeds = stnCode => {
     const stnLines = stationLines.filter(l => String(l.MAVSTTNCODE).trim() === stnCode);
     if (!stnLines || stnLines.length === 0) return [110];
@@ -151,7 +143,6 @@ export async function runSimulation({
     return capacityCache.get(stnCode);
   };
 
-  // Station order map for block checking
   const stationOrderMap = {};
   let _ord = 0;
   for (const node of layout.sequence) {
@@ -165,7 +156,6 @@ export async function runSimulation({
     return o >= Math.min(oA, oB) && o <= Math.max(oA, oB);
   };
 
-  // Build blockInfo (same as component)
   const buildBlockInfo = (stn1Code, stn2Code, isDoubleLine, signalling = 'AB') => {
     const o1 = stationOrderMap[stn1Code];
     const o2 = stationOrderMap[stn2Code];
@@ -234,21 +224,17 @@ export async function runSimulation({
     };
   };
 
-  const countOverlapsFast = (blockInfo, depMins, arrMins, extraScheduled) => {
+  const countOverlapsFast = (blockInfo, depMins, arrMins, extraScheduled, capacity = 1) => {
     let sameDirOverlaps = 0;
     let oppDirOverlaps = 0;
     let headwayViolation = false;
-    let automaticSeparationViolation = false;
+    let blockOpTimeViolation = false;
+    let autoConflict = false;
     let confTrainId = null;
     let confTrainDir = null;
 
-    // TEMPORARY: project/railway-specific Automatic Signalling separation
-    // must be confirmed by project authority.
-    const automaticSeparationMins = hwMargin;
-
     const currentDayIdx = Math.floor(depMins / 1440);
 
-    // Check matched candidates (existing trains)
     for (const cand of blockInfo.matchedCandidates) {
       let dayOffset = 0;
       if (!cand.isSimulated) {
@@ -261,19 +247,31 @@ export async function runSimulation({
       const segArr = cand.segArrBase + dayOffset;
 
       if (cand.isSameDir) {
-        // Normal scheduler headway check
-        if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
-        if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
-        if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) headwayViolation = true;
+        if (blockInfo.signalling === 'AUTO') {
+          const C = Math.max(1, capacity);
+          for (let k = 0; k < C; k++) {
+            const aIn = segDep + k * (segArr - segDep) / C;
+            const aOut = segDep + (k + 1) * (segArr - segDep) / C;
+            const bIn = depMins + k * (arrMins - depMins) / C;
+            const bOut = depMins + (k + 1) * (arrMins - depMins) / C;
 
-        // Automatic signalling separation check
-        if (Math.abs(segDep - depMins) < automaticSeparationMins) automaticSeparationViolation = true;
-        if (Math.abs(segArr - arrMins) < automaticSeparationMins) automaticSeparationViolation = true;
-        if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) automaticSeparationViolation = true;
+            if (aIn < bOut && aOut > bIn) {
+              autoConflict = true;
+            }
+            if (aOut <= bIn && bIn < aOut + blockOpTime) {
+              autoConflict = true;
+            }
+          }
+        } else {
+          if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
+          if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
+          if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) headwayViolation = true;
+
+          if (segArr <= depMins && depMins < segArr + blockOpTime) blockOpTimeViolation = true;
+        }
       }
 
-      // Physical occupancy overlap (Time-window overlap)
-      if ((segDep - hwMargin - blockOpTime) < arrMins && (segArr + hwMargin + blockOpTime) > depMins) {
+      if (segDep < arrMins && segArr > depMins) {
         if (cand.isSameDir) {
           sameDirOverlaps++;
         } else {
@@ -286,7 +284,6 @@ export async function runSimulation({
       }
     }
 
-    // Check extra scheduled trains
     if (extraScheduled && extraScheduled.length > 0) {
       for (const train of extraScheduled) {
         if (!train.stops || train.stops.length < 2) continue;
@@ -302,16 +299,31 @@ export async function runSimulation({
           const segArr = cStp.absArrMins !== undefined ? cStp.absArrMins : (cStp.arrTime * 60);
 
           if (same) {
-            if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
-            if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
-            if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) headwayViolation = true;
+            if (blockInfo.signalling === 'AUTO') {
+              const C = Math.max(1, capacity);
+              for (let k = 0; k < C; k++) {
+                const aIn = segDep + k * (segArr - segDep) / C;
+                const aOut = segDep + (k + 1) * (segArr - segDep) / C;
+                const bIn = depMins + k * (arrMins - depMins) / C;
+                const bOut = depMins + (k + 1) * (arrMins - depMins) / C;
 
-            if (Math.abs(segDep - depMins) < automaticSeparationMins) automaticSeparationViolation = true;
-            if (Math.abs(segArr - arrMins) < automaticSeparationMins) automaticSeparationViolation = true;
-            if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) automaticSeparationViolation = true;
+                if (aIn < bOut && aOut > bIn) {
+                  autoConflict = true;
+                }
+                if (aOut <= bIn && bIn < aOut + blockOpTime) {
+                  autoConflict = true;
+                }
+              }
+            } else {
+              if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
+              if (Math.abs(segArr - arrMins) < hwMargin) headwayViolation = true;
+              if ((segDep < depMins && segArr > arrMins) || (segDep > depMins && segArr < arrMins)) headwayViolation = true;
+
+              if (segArr <= depMins && depMins < segArr + blockOpTime) blockOpTimeViolation = true;
+            }
           }
 
-          if ((segDep - hwMargin - blockOpTime) < arrMins && (segArr + hwMargin + blockOpTime) > depMins) {
+          if (segDep < arrMins && segArr > depMins) {
             if (same) {
               sameDirOverlaps++;
             } else {
@@ -327,7 +339,12 @@ export async function runSimulation({
       }
     }
 
-    return { sameDirOverlaps, oppDirOverlaps, headwayViolation, automaticSeparationViolation, confTrainId, confTrainDir };
+    if (autoConflict && !confTrainId) {
+      confTrainId = 'auto_conflict_train';
+      confTrainDir = 'SAME';
+    }
+
+    return { sameDirOverlaps, oppDirOverlaps, headwayViolation, blockOpTimeViolation, autoConflict, confTrainId, confTrainDir };
   };
 
   const stationLineDirs = buildStationLineDirections(layout);
@@ -375,7 +392,7 @@ export async function runSimulation({
       .sort((a, b) => {
         const aBoth = a.direction === 'BOTH' ? 1 : 0;
         const bBoth = b.direction === 'BOTH' ? 1 : 0;
-        return aBoth - bBoth; // exact direction first
+        return aBoth - bBoth;
       });
 
     const allocations = initAllocations(stnCode);
@@ -418,7 +435,6 @@ export async function runSimulation({
     }
   };
 
-  // Pre-allocate Canonical Trains
   canonicalTrains.forEach(train => {
     if (!train.stops) return;
     const tId = train.trainNo;
@@ -431,7 +447,6 @@ export async function runSimulation({
     }
   });
 
-  // Pre-allocate Accepted Simulated Paths (from previous runs/reloads)
   simulatedPaths.forEach(train => {
     if (!train.stops) return;
     const tId = train.trainNo;
@@ -537,10 +552,10 @@ export async function runSimulation({
       while (departAttempt[i] <= arrivalAt[i] + halt + maxDetentionMins) {
         let assignedSpeed = null;
         let finalArrTime = null;
+        let currentEndLineId = null;
         let blockConflictFound = false;
         let stationConflictFound = false;
 
-        // RE-CHECK THE ENTIRE HALT DURATION INCLUDING DETENTION
         let currentLineId = null;
         if (i === 0) {
           const originRes = checkCandidateStationLine(block.stn1.code, arrivalAt[0], departAttempt[0], reqDir, reqTrainId);
@@ -561,7 +576,7 @@ export async function runSimulation({
         if (stationConflictFound) {
           diagnostics.backtrackCount++;
           if (i === 0) {
-            return null; // Cannot backtrack before origin
+            return null;
           }
           for (let k = i; k < n; k++) {
             departAttempt[k] = null;
@@ -620,10 +635,7 @@ export async function runSimulation({
           let accelMins = 0;
           let decelMins = 0;
 
-          // Acceleration logic:
-          // - Always apply at origin (i === 0).
-          // - Apply at every intermediate actual stop.
-          //   A station is an actual stop if it has a scheduled halt > 0 OR if it was detained there.
+
           const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
           const stn1IsActualStop = i > 0 && (stn1Halt > 0 || departAttempt[i] > waitStartedAt[i] || detainedStations.has(block.stn1.code));
 
@@ -631,9 +643,6 @@ export async function runSimulation({
             accelMins = accelPenaltyMins;
           }
 
-          // Deceleration logic:
-          // - Always apply for the last segment (i === n - 2, arriving at final destination).
-          // - Apply when arriving at any intermediate actual stop (planned halt > 0).
           const stn2Halt = simStopsMap.has(block.stn2.code) ? simStopsMap.get(block.stn2.code) : 0;
           const stn2IsActualStop = i < n - 2 && (stn2Halt > 0 || detainedStations.has(block.stn2.code));
 
@@ -655,37 +664,38 @@ export async function runSimulation({
           const testArr = depTime + runTime;
           diagnostics.blockConflictChecks++;
 
-          // 6. UPDATE countOverlapsFast()
-          const { sameDirOverlaps, oppDirOverlaps, headwayViolation, automaticSeparationViolation, confTrainId, confTrainDir } = countOverlapsFast(blockInfo, depTime, testArr, localScheduled);
+          const { sameDirOverlaps, oppDirOverlaps, headwayViolation, blockOpTimeViolation, autoConflict, confTrainId, confTrainDir } = countOverlapsFast(blockInfo, depTime, testArr, localScheduled, block.capacity);
 
           let blockConflict = false;
           let conflictReason = null;
 
-          // 7. UPDATE attemptPathFromTime() & 4. ABSOLUTE SIGNALLING & 5. AUTOMATIC SIGNALLING
           if (blockInfo.signalling === 'AB') {
-            // Absolute: Strict physical occupancy + headway
             if (headwayViolation) {
               blockConflict = true;
               conflictReason = 'HEADWAY_VIOLATION';
-            } else if ((sameDirOverlaps + oppDirOverlaps) >= block.capacity) {
+            } else if ((sameDirOverlaps + oppDirOverlaps) >= 1) {
               blockConflict = true;
               conflictReason = 'PHYSICAL_OCCUPANCY_CONFLICT';
+            } else if (blockOpTimeViolation) {
+              blockConflict = true;
+              conflictReason = 'BLOCK_OP_TIME_VIOLATION';
             }
           } else if (blockInfo.signalling === 'AUTO') {
-            // Automatic: Physical block capacity is relaxed based on separation rules for SAME-DIRECTION ONLY.
-            // Opposite direction physical block capacity must be strictly maintained (head-on collision prevention).
-            if (oppDirOverlaps >= block.capacity) {
+
+            if (oppDirOverlaps >= 1) {
               blockConflict = true;
               conflictReason = 'OPPOSITE_DIRECTION_PHYSICAL_CONFLICT';
-            } else if (automaticSeparationViolation) {
+            } else if (autoConflict) {
               blockConflict = true;
-              conflictReason = 'AUTOMATIC_SEPARATION_VIOLATION';
+              conflictReason = 'AUTO_SUBBLOCK_CONFLICT';
             }
           } else {
-            // Fallback (treat as Absolute)
-            if (headwayViolation || (sameDirOverlaps + oppDirOverlaps) >= block.capacity) {
+            if (headwayViolation || (sameDirOverlaps + oppDirOverlaps) >= 1) {
               blockConflict = true;
               conflictReason = 'FALLBACK_CONFLICT';
+            } else if (blockOpTimeViolation) {
+              blockConflict = true;
+              conflictReason = 'BLOCK_OP_TIME_VIOLATION';
             }
           }
 
@@ -702,7 +712,7 @@ export async function runSimulation({
           }
           assignedSpeed = spd;
           finalArrTime = testArr;
-          hopResult.currentEndLineId = nextRes.assignedLineId;
+          currentEndLineId = nextRes.assignedLineId;
           break;
         }
 
@@ -725,9 +735,6 @@ export async function runSimulation({
             detentionCount++;
           }
 
-          // BACKTRACK LOGIC FOR UNEXPECTED DETENTION DECELERATION:
-          // If we just got detained (waitedHere === 1) at a pass-through station (halt === 0),
-          // we must backtrack to the previous hop so it can recalculate its runTime WITH deceleration.
           const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
           if (waitedHere === 1 && stn1Halt === 0 && i > 0 && !detainedStations.has(block.stn1.code)) {
             detainedStations.add(block.stn1.code);
@@ -742,7 +749,7 @@ export async function runSimulation({
               if (conflictReasons[k]) conflictReasons[k] = null;
             }
             i -= 1;
-            break; // Re-evaluate i-1, now stn2IsActualStop will be true
+            break;
           }
 
           if (waitedHere > maxDetentionMins) {
@@ -787,7 +794,7 @@ export async function runSimulation({
           const oscKey = `${i}-${block.stn1.code}`;
           const count = (visited.phantomDetentions.get(oscKey) || 0) + 1;
           visited.phantomDetentions.set(oscKey, count);
-          
+
           if (count <= 2) {
             detainedStations.delete(block.stn1.code);
             diagnostics.backtrackCount++;
@@ -814,7 +821,7 @@ export async function runSimulation({
           startStn: block.stn1.code,
           endStn: block.stn2.code,
           startLineId: i === 0 ? originLineId : hopResult[i - 1].endLineId,
-          endLineId: hopResult.currentEndLineId,
+          endLineId: currentEndLineId,
           arrivalTime: i === 0 ? depTime : arrivalAt[i],
           normalHalt: halt,
           earliestDeparture: i === 0 ? depTime : waitStartedAt[i],
@@ -847,7 +854,6 @@ export async function runSimulation({
       let capacity = 1;
       let numPhysicalLines = 1;
       let inBlock = false;
-      // Normalize to layout order for scanning (sequence is always forward)
       const layoutOrder1 = stationOrderMap[stn1.code];
       const layoutOrder2 = stationOrderMap[stn2.code];
       const scanFirst = layoutOrder1 < layoutOrder2 ? stn1.code : stn2.code;
@@ -870,9 +876,11 @@ export async function runSimulation({
         }
       }
 
-      // 1. REMOVE ARBITRARY CAPACITY FORMULA
-      // Physical capacity per track direction is 1. Double line opposite is handled separately.
-      capacity = 1;
+      if (isAuto) {
+        capacity = Math.max(1, Math.floor(dist / 3.6));
+      } else {
+        capacity = 1;
+      }
 
       if (dist === 0) {
         console.error(`Block section ${blockCode} has 0 distance or not found in sequence between ${stn1.code} and ${stn2.code}`);
@@ -973,7 +981,6 @@ export async function runSimulation({
     };
   };
 
-  // ─── Source → Destination slicing ──────────────────────────────────────────
   const srcIdx = layoutStations.findIndex(s => s.code === simSource);
   const dstIdx = layoutStations.findIndex(s => s.code === simDest);
   if (srcIdx === -1 || dstIdx === -1 || srcIdx === dstIdx) {
