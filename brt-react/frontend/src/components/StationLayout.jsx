@@ -307,16 +307,16 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#10b981" />
             </marker>
 
-            <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowGreyMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowGreyMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#cbd5e1" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowBiMain" markerWidth="36" markerHeight="36" refX="16.5" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBiMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#10b981" transform="scale(1.5)" />
             </marker>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -1534,14 +1534,33 @@ function generateRenderData(layout) {
       const adjStartY = startY + offset;
       const adjEndY = endY + offset;
 
-      const midX = (startX + endX) / 2;
-      const midY = (adjStartY + adjEndY) / 2;
+      const dx = endX - startX;
+      const dy = adjEndY - adjStartY;
+      const absDy = Math.abs(dy);
+
+      const varFactor = (stnLineNum % 2 === 0) ? 1 : -1;
+      const isStraight = absDy < 5;
+      const bulge = isStraight ? (dx * 0.06 * varFactor) : 0;
+
+      const cp1X = startX + dx * (0.42 + 0.04 * varFactor);
+      const cp1Y = adjStartY + bulge + (absDy * 0.05 * varFactor);
+
+      const cp2X = endX - dx * (0.42 - 0.04 * varFactor);
+      const cp2Y = adjEndY + bulge - (absDy * 0.05 * varFactor);
+
+      // Split the cubic Bezier at t=0.5 to provide a mid-vertex for markerMid
+      const m01 = { x: (startX + cp1X) / 2, y: (adjStartY + cp1Y) / 2 };
+      const m12 = { x: (cp1X + cp2X) / 2, y: (cp1Y + cp2Y) / 2 };
+      const m23 = { x: (cp2X + endX) / 2, y: (cp2Y + adjEndY) / 2 };
+      const q0 = { x: (m01.x + m12.x) / 2, y: (m01.y + m12.y) / 2 };
+      const q1 = { x: (m12.x + m23.x) / 2, y: (m12.y + m23.y) / 2 };
+      const mid = { x: (q0.x + q1.x) / 2, y: (q0.y + q1.y) / 2 };
 
       let path;
       if (isSend || isBidirectional || isMSync) {
-        path = `M ${startX} ${adjStartY} L ${midX} ${midY} L ${endX} ${adjEndY}`;
+        path = `M ${startX} ${adjStartY} C ${m01.x} ${m01.y}, ${q0.x} ${q0.y}, ${mid.x} ${mid.y} C ${q1.x} ${q1.y}, ${m23.x} ${m23.y}, ${endX} ${adjEndY}`;
       } else {
-        path = `M ${endX} ${adjEndY} L ${midX} ${midY} L ${startX} ${adjStartY}`;
+        path = `M ${endX} ${adjEndY} C ${m23.x} ${m23.y}, ${q1.x} ${q1.y}, ${mid.x} ${mid.y} C ${q0.x} ${q0.y}, ${m01.x} ${m01.y}, ${startX} ${adjStartY}`;
       }
 
       const actualStnLine = layout.stations[conn.MAVSTTNCODE]?.lines.find(l => parseFloat(l.MANSEQNUMB) === stnLineNum);

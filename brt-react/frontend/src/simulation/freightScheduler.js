@@ -644,19 +644,8 @@ export async function runSimulation({
           let runTime;
           if (spd > 0) {
             const vKmMin = spd / 60;
-            const dAccel = (vKmMin / 2) * accelMins;
-            const dDecel = (vKmMin / 2) * decelMins;
-
-            if (block.dist >= dAccel + dDecel) {
-              const dCruise = block.dist - dAccel - dDecel;
-              const tCruise = dCruise / vKmMin;
-              runTime = accelMins + tCruise + decelMins;
-            } else {
-              // Not enough distance to reach full speed. Calculate based on peak speed reached.
-              const invA = accelMins > 0 ? (accelMins / vKmMin) : 0;
-              const invD = decelMins > 0 ? (decelMins / vKmMin) : 0;
-              runTime = Math.sqrt(2 * block.dist * (invA + invD));
-            }
+            const baseRunTime = block.dist / vKmMin;
+            runTime = baseRunTime + accelMins + decelMins;
           } else {
             runTime = 10;
           }
@@ -791,6 +780,31 @@ export async function runSimulation({
         }
 
         const detentionMins = i === 0 ? 0 : departAttempt[i] - waitStartedAt[i];
+
+        const stn1HaltForCheck = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
+        if (i > 0 && detentionMins === 0 && stn1HaltForCheck === 0 && detainedStations.has(block.stn1.code)) {
+          if (!visited.phantomDetentions) visited.phantomDetentions = new Map();
+          const oscKey = `${i}-${block.stn1.code}`;
+          const count = (visited.phantomDetentions.get(oscKey) || 0) + 1;
+          visited.phantomDetentions.set(oscKey, count);
+          
+          if (count <= 2) {
+            detainedStations.delete(block.stn1.code);
+            diagnostics.backtrackCount++;
+            for (let k = i; k < n; k++) {
+              departAttempt[k] = null;
+              waitStartedAt[k] = null;
+              if (k >= i) arrivalAt[k] = null;
+            }
+            for (let k = i - 1; k < n - 1; k++) {
+              hopResult[k] = null;
+              if (conflictReasons[k]) conflictReasons[k] = null;
+            }
+            i -= 1;
+            break;
+          }
+        }
+
         let finalReason = 'NONE';
         if (detentionMins > 0 && conflictReasons[i].size > 0) {
           finalReason = Array.from(conflictReasons[i]).join('+');
