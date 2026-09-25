@@ -1252,7 +1252,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   />
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Headway(m)</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Headway(min)</label>
                   <select value={simHeadway} onChange={e => setSimHeadway(e.target.value)} style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}>
                     {[...Array(15)].map((_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
                   </select>
@@ -1280,7 +1280,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Accel (m:s)
+                    Accel (mm:ss)
                   </label>
                   <input
                     type="text"
@@ -1292,7 +1292,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Decel (m:s)
+                    Decel (mm:ss)
                   </label>
                   <input
                     type="text"
@@ -1303,7 +1303,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   />
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op(m)</label>
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op(min)</label>
                   <input
                     type="number"
                     min="0"
