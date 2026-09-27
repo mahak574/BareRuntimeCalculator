@@ -136,9 +136,9 @@ function ConfirmAllModal({ nodes, config, data, onModifyLayout, onClose }) {
 
 // ─── Main Export ───────────────────────────────────────────────────────────────
 
-export default function TrackConfigButton({ generatedLayout, data, onModifyLayout }) {
+export default function TrackConfigButton({ generatedLayout, data, onModifyLayout, globalBlockOpTime, setGlobalBlockOpTime }) {
   const [open, setOpen] = useState(false);
-  const [config, setConfig] = useState({ ...DEFAULT_CONFIG });
+  const [config, setConfig] = useState({ ...DEFAULT_CONFIG, blockTime: globalBlockOpTime || DEFAULT_CONFIG.blockTime });
   const [showConfirmAll, setShowConfirmAll] = useState(false);
   const panelRef = useRef(null);
   const btnRef = useRef(null);
@@ -159,9 +159,16 @@ export default function TrackConfigButton({ generatedLayout, data, onModifyLayou
     return () => document.removeEventListener('mousedown', handle);
   }, [open]);
 
+  useEffect(() => {
+    setConfig(prev => ({ ...prev, blockTime: globalBlockOpTime || DEFAULT_CONFIG.blockTime }));
+  }, [globalBlockOpTime]);
+
   const set = useCallback((field) => (value) => {
+    if (field === 'blockTime' && setGlobalBlockOpTime) {
+      setGlobalBlockOpTime(value);
+    }
     setConfig(prev => ({ ...prev, [field]: value }));
-  }, []);
+  }, [setGlobalBlockOpTime]);
 
   if (!generatedLayout) return null;
 

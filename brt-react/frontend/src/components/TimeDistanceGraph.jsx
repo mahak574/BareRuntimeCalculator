@@ -12,7 +12,7 @@ import { calculateGoodsSpeedConfig } from '../utils/goodsSpeedCalculator';
  * @param {Object} layout - The structured topology layout.
  * @param {Array} scheduleData - The raw schedule rows from the Excel 'Schedule' sheet.
  */
-export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = [], showSimulationModal, setShowSimulationModal, stationLines = [] }) {
+export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = [], showSimulationModal, setShowSimulationModal, stationLines = [], globalBlockOpTime, setGlobalBlockOpTime }) {
   const [windowMode, setWindowMode] = useState('24h');
   const [timeBlock, setTimeBlock] = useState('all'); // 'all', '0-8', '8-16', '16-24'
   const [ySpacing, setYSpacing] = useState('equidistant');
@@ -41,7 +41,6 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   const [simAccelTime, setSimAccelTime] = useState('05:00');
   const [simDecelTime, setSimDecelTime] = useState('03:00');
   const [simBlockCorridor, setSimBlockCorridor] = useState(false);
-  const [simBlockOperatingTime, setSimBlockOperatingTime] = useState('');
   // Direction: array of 'forward' | 'backward'
   const [simDirections, setSimDirections] = useState(['forward', 'backward']);
   // simStops: array of { code: string, halt: number (mins) }
@@ -515,7 +514,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
         simAccelTime,
         simDecelTime,
         simBlockCorridor,
-        simBlockOperatingTime,
+        simBlockOperatingTime: globalBlockOpTime,
         simStops,
         simDirections,
         abortSimRef,
@@ -1314,8 +1313,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                     type="number"
                     min="0"
                     placeholder="0"
-                    value={simBlockOperatingTime}
-                    onChange={e => setSimBlockOperatingTime(e.target.value)}
+                    value={globalBlockOpTime}
+                    onChange={e => setGlobalBlockOpTime(e.target.value)}
                     style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: '#fff' }}
                   />
                 </div>

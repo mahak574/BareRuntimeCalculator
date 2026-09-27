@@ -437,9 +437,11 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1" />
                     </>
                   )}
-                  <g transform={`translate(${midX}, ${midY}) rotate(${arrowAngleDeg}) scale(1.5) translate(-6, -12)`}>
-                    <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill={arrowColor} />
-                  </g>
+                  {(isBlue || isOrange) && (
+                    <g transform={`translate(${midX}, ${midY}) rotate(${arrowAngleDeg}) scale(1.5) translate(-6, -12)`}>
+                      <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill={arrowColor} />
+                    </g>
+                  )}
                 </g>
               )
             })}
@@ -1287,30 +1289,34 @@ function generateRenderData(layout) {
              graphEdges.push([`S|${conn.MAVSTTNCODE}|${slSeq}`, `B|${bsCode}|${blSeq}`]);
            }
 
-           const flag = String(conn.MACRECVSENDFLAG || '').trim();
-           const isSend = flag === 'S';
-           const isRecv = flag === 'R';
-           const isMSync = flag === 'M_SYNC';
-           
-           let isLtoR = null;
-           if (isSend || isMSync) {
-             isLtoR = bsIndex > stnIndex;
-           } else if (isRecv) {
-             isLtoR = bsIndex < stnIndex;
-           }
-           
-           if (isLtoR !== null) {
-             const color = isLtoR ? 'blue' : 'orange';
-             console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
-             if (!dirMap.station[conn.MAVSTTNCODE]) dirMap.station[conn.MAVSTTNCODE] = {};
-             dirMap.station[conn.MAVSTTNCODE][slSeq] = color;
-             
-             if (bl && (blCat === 'M' || blCat === 'MAIN')) {
-               const blSeq = parseFloat(bl.MANSEQNUMB);
-               if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
-               dirMap.block[bsCode][blSeq] = color;
-             }
-           }
+            /* 
+            // Commenting out initial seed from flags to enforce continuous propagation 
+            // from the first station across the entire route.
+            const flag = String(conn.MACRECVSENDFLAG || '').trim();
+            const isSend = flag === 'S';
+            const isRecv = flag === 'R';
+            const isMSync = flag === 'M_SYNC';
+            
+            let isLtoR = null;
+            if (isSend || isMSync) {
+              isLtoR = bsIndex > stnIndex;
+            } else if (isRecv) {
+              isLtoR = bsIndex < stnIndex;
+            }
+            
+            if (isLtoR !== null) {
+              const color = isLtoR ? 'blue' : 'orange';
+              console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
+              if (!dirMap.station[conn.MAVSTTNCODE]) dirMap.station[conn.MAVSTTNCODE] = {};
+              dirMap.station[conn.MAVSTTNCODE][slSeq] = color;
+              
+              if (bl && (blCat === 'M' || blCat === 'MAIN')) {
+                const blSeq = parseFloat(bl.MANSEQNUMB);
+                if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
+                dirMap.block[bsCode][blSeq] = color;
+              }
+            }
+            */
         }
       }
     });

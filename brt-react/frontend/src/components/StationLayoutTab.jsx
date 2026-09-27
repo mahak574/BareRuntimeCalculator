@@ -22,6 +22,7 @@ export default function StationLayoutTab() {
   const [selectedValue, setSelectedValue] = useState('');
   const [generatedLayout, setGeneratedLayout] = useState(null);
   const [appliedLayout, setAppliedLayout] = useState(null);
+  const [globalBlockOpTime, setGlobalBlockOpTime] = useState('');
 
   useEffect(() => {
     setAppliedLayout(null);
@@ -736,6 +737,8 @@ export default function StationLayoutTab() {
                   generatedLayout={generatedLayout}
                   data={data}
                   onModifyLayout={handleModifyLayout}
+                  globalBlockOpTime={globalBlockOpTime}
+                  setGlobalBlockOpTime={setGlobalBlockOpTime}
                 />
               </div>
             </div>
@@ -797,7 +800,7 @@ export default function StationLayoutTab() {
           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
             {data.sheets.Schedule && data.sheets.Schedule.length > 0 && (
               <div style={{ flex: 1, minWidth: 0 }}>
-                <TimeDistanceGraph layout={appliedLayout || generatedLayout} showSimulationModal={showSimulationModal} setShowSimulationModal={setShowSimulationModal} scheduleData={data.sheets.Schedule} routeInfo={data.sheets.RouteInfo} stationLines={data.sheets.StationLine} />
+                <TimeDistanceGraph layout={appliedLayout || generatedLayout} showSimulationModal={showSimulationModal} setShowSimulationModal={setShowSimulationModal} scheduleData={data.sheets.Schedule} routeInfo={data.sheets.RouteInfo} stationLines={data.sheets.StationLine} globalBlockOpTime={globalBlockOpTime} setGlobalBlockOpTime={setGlobalBlockOpTime} />
               </div>
             )}
           </div>

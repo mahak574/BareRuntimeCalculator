@@ -242,7 +242,7 @@ export async function runSimulation({
           const baseK = Math.floor(cand.segDepBase / 1440);
           segDep = (cand.segDepBase - baseK * 1440) + currentDayIdx * 1440;
           segArr = (cand.segArrBase - baseK * 1440) + currentDayIdx * 1440;
-          
+
           if (segDep - depMins > 720) {
             segDep -= 1440;
             segArr -= 1440;
@@ -392,13 +392,13 @@ export async function runSimulation({
     for (const int of intervals) {
       let aStart = int.start;
       let aEnd = int.end;
-      
+
       if (simDay === 'All' && alloc.daysBits) {
         const baseK = Math.floor(aStart / 1440);
         const currentDayIdx = Math.floor(reqStart / 1440);
         aStart = (aStart - baseK * 1440) + currentDayIdx * 1440;
         aEnd = (aEnd - baseK * 1440) + currentDayIdx * 1440;
-        
+
         if (aStart - reqStart > 720) {
           aStart -= 1440;
           aEnd -= 1440;
@@ -693,7 +693,7 @@ export async function runSimulation({
           if (spd > 0) {
             const vKmMin = spd / 60;
             const baseRunTime = block.dist / vKmMin;
-            runTime = baseRunTime + accelMins + decelMins;
+            runTime = Math.round(baseRunTime + accelMins + decelMins);
           } else {
             runTime = 10;
           }
