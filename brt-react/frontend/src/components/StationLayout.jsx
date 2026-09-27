@@ -411,13 +411,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               // Per-track signalling: look up the block section this track belongs to.
               // Avoids the old isGlobalAbsolute that changed ALL tracks when ONE section changed.
               const trkIsAbsolute = isBlockAbsolute(trk.bsCode);
-              
+
               const midX = (trk.x1 + trk.x2) / 2;
               const midY = (trk.y1 + trk.y2) / 2;
               const isBlue = trk.trackColor === 'blue';
               const isOrange = trk.trackColor === 'orange';
               const arrowColor = isBlue ? '#2563ebff' : (isOrange ? '#ea580c' : '#cbd5e1');
-              
+
               let arrowAngle = trk.angle;
               if (isOrange) {
                 arrowAngle += Math.PI;
@@ -555,7 +555,18 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   }}
                   style={{ cursor: 'pointer' }}
                 >
-                  {c.isBidirectional ? (
+                  {c.isMainLineConnection ? (
+                    // MAIN LINE connection: 8px, straight, same width as block section, arrows visible
+                    <path
+                      d={c.path}
+                      stroke={c.isRedundantMainLine ? "transparent" : c.color}
+                      strokeWidth={MAIN_TRACK_WIDTH}
+                      strokeLinecap="butt"
+                      fill="none"
+                      opacity="1"
+                      markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : `url(#${arrowId})`}
+                    />
+                  ) : c.isBidirectional ? (
                     <path
                       d={c.path}
                       stroke={c.isRedundantMainLine ? "transparent" : c.color}
@@ -1189,6 +1200,8 @@ function generateRenderData(layout) {
     totalHeight: 600
   };
 
+  const visualEdges = [];
+
 
   const ySpacing = 40;
 
@@ -1214,16 +1227,7 @@ function generateRenderData(layout) {
     } else {
       const bs = layout.blockSections[code];
       if (bs && bs.lines) {
-        lines = bs.lines.filter(l => {
-          const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-          return cat === 'M' || cat === 'MAIN';
-        });
-        if (lines.length === 0) {
-          lines = bs.lines.filter(l => {
-            const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-            return cat !== 'LOOP' && cat !== 'INDEPENDENT';
-          });
-        }
+        lines = [...bs.lines];
       }
     }
 
@@ -1242,105 +1246,58 @@ function generateRenderData(layout) {
     if (!layout || !layout.connections) return dirMap;
 
     const getStnLine = (stnCode, stnLineNum) => {
-       const stn = layout.stations[stnCode];
-       if (!stn) return null;
-       let l = stn.lines.find(l => String(l.MANSTTNLINENUMB).trim() === stnLineNum);
-       if (!l) l = stn.lines.find(l => String(l.MAVLINENUMB).trim() === stnLineNum);
-       if (!l) l = stn.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(stnLineNum));
-       return l;
+      const stn = layout.stations[stnCode];
+      if (!stn) return null;
+      let l = stn.lines.find(l => String(l.MANSTTNLINENUMB).trim() === stnLineNum);
+      if (!l) l = stn.lines.find(l => String(l.MAVLINENUMB).trim() === stnLineNum);
+      if (!l) l = stn.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(stnLineNum));
+      return l;
     };
-    
+
     const getBsLine = (bsCode, blkLineNum) => {
-       const bs = layout.blockSections[bsCode];
-       if (!bs) return null;
-       let l = bs.lines.find(l => String(l.MANBLCKLINENUMB).trim() === blkLineNum);
-       if (!l) l = bs.lines.find(l => String(l.MAVLINENUMB).trim() === blkLineNum);
-       if (!l) l = bs.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(blkLineNum));
-       return l;
+      const bs = layout.blockSections[bsCode];
+      if (!bs) return null;
+      let l = bs.lines.find(l => String(l.MANBLCKLINENUMB).trim() === blkLineNum);
+      if (!l) l = bs.lines.find(l => String(l.MAVLINENUMB).trim() === blkLineNum);
+      if (!l) l = bs.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(blkLineNum));
+      return l;
     };
 
     const graphEdges = [];
-    
+
     layout.connections.forEach(conn => {
       let bsCode = conn.MAVBLCKSCTN || '';
       if (nodeIndexMap[bsCode] === undefined) {
         const reversed = String(bsCode).split('-').reverse().join('-');
         if (nodeIndexMap[reversed] !== undefined) bsCode = reversed;
       }
-      
+
       const stnIndex = nodeIndexMap[conn.MAVSTTNCODE];
       const bsIndex = nodeIndexMap[bsCode];
-      
+
       if (stnIndex !== undefined && bsIndex !== undefined) {
         const stnLineNum = String(conn.MANSTTNLINENUMB).trim();
         const blkLineNum = String(conn.MANBLCKLINENUMB).trim();
-        
+
         const sl = getStnLine(conn.MAVSTTNCODE, stnLineNum);
         const bl = getBsLine(bsCode, blkLineNum);
-        
+
         const slCat = String(sl?.MACLINECATEGORY || '').trim().toUpperCase();
         const blCat = String(bl?.MACLINECATEGORY || '').trim().toUpperCase();
 
         if (sl && (slCat === 'M' || slCat === 'MAIN')) {
-           const slSeq = parseFloat(sl.MANSEQNUMB);
-           
-           if (bl && (blCat === 'M' || blCat === 'MAIN')) {
-             const blSeq = parseFloat(bl.MANSEQNUMB);
-             graphEdges.push([`S|${conn.MAVSTTNCODE}|${slSeq}`, `B|${bsCode}|${blSeq}`]);
-           }
+          const slSeq = parseFloat(sl.MANSEQNUMB);
 
-            /* 
-            // Commenting out initial seed from flags to enforce continuous propagation 
-            // from the first station across the entire route.
-            const flag = String(conn.MACRECVSENDFLAG || '').trim();
-            const isSend = flag === 'S';
-            const isRecv = flag === 'R';
-            const isMSync = flag === 'M_SYNC';
-            
-            let isLtoR = null;
-            if (isSend || isMSync) {
-              isLtoR = bsIndex > stnIndex;
-            } else if (isRecv) {
-              isLtoR = bsIndex < stnIndex;
-            }
-            
-            if (isLtoR !== null) {
-              const color = isLtoR ? 'blue' : 'orange';
-              console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
-              if (!dirMap.station[conn.MAVSTTNCODE]) dirMap.station[conn.MAVSTTNCODE] = {};
-              dirMap.station[conn.MAVSTTNCODE][slSeq] = color;
-              
-              if (bl && (blCat === 'M' || blCat === 'MAIN')) {
-                const blSeq = parseFloat(bl.MANSEQNUMB);
-                if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
-                dirMap.block[bsCode][blSeq] = color;
-              }
-            }
-            */
+          if (bl) {
+            const blSeq = parseFloat(bl.MANSEQNUMB);
+            graphEdges.push([`S|${conn.MAVSTTNCODE}|${slSeq}`, `B|${bsCode}|${blSeq}`]);
+          }
+
+
         }
       }
     });
 
-    layout.sequence.forEach((node, i) => {
-      if (i === layout.sequence.length - 1) return;
-      const nextNode = layout.sequence[i + 1];
-
-      const mLinesA = getMainLinesForNode(node.code, node.type);
-      const mLinesB = getMainLinesForNode(nextNode.code, nextNode.type);
-      
-      const maxLen = Math.max(mLinesA.length, mLinesB.length);
-      for (let j = 0; j < maxLen; j++) {
-        const la = mLinesA[j];
-        const lb = mLinesB[j];
-        if (!la || !lb) continue;
-        
-        const typeA = node.type === 'station' ? 'S' : 'B';
-        const typeB = nextNode.type === 'station' ? 'S' : 'B';
-        const idA = `${typeA}|${node.code}|${parseFloat(la.MANSEQNUMB)}`;
-        const idB = `${typeB}|${nextNode.code}|${parseFloat(lb.MANSEQNUMB)}`;
-        graphEdges.push([idA, idB]);
-      }
-    });
 
     layout.sequence.forEach((node, i) => {
       if (node.type === 'station' && layout.stations[node.code] && layout.stations[node.code].macclassflag === 'D') {
@@ -1396,26 +1353,26 @@ function generateRenderData(layout) {
       changed = false;
       iter++;
       graphEdges.forEach(([idA, idB]) => {
-         const [typeA, codeA, seqA] = idA.split('|');
-         const [typeB, codeB, seqB] = idB.split('|');
-         
-         const mapA = typeA === 'S' ? dirMap.station : dirMap.block;
-         const mapB = typeB === 'S' ? dirMap.station : dirMap.block;
-         
-         const colorA = mapA[codeA]?.[seqA];
-         const colorB = mapB[codeB]?.[seqB];
-         
-         if (colorA && !colorB) {
-           if (!mapB[codeB]) mapB[codeB] = {};
-           mapB[codeB][seqB] = colorA;
-           console.log(`[Diagnostic] PROPAGATE: ${idA} (${colorA}) -> ${idB}`);
-           changed = true;
-         } else if (colorB && !colorA) {
-           if (!mapA[codeA]) mapA[codeA] = {};
-           mapA[codeA][seqA] = colorB;
-           console.log(`[Diagnostic] PROPAGATE: ${idB} (${colorB}) -> ${idA}`);
-           changed = true;
-         }
+        const [typeA, codeA, seqA] = idA.split('|');
+        const [typeB, codeB, seqB] = idB.split('|');
+
+        const mapA = typeA === 'S' ? dirMap.station : dirMap.block;
+        const mapB = typeB === 'S' ? dirMap.station : dirMap.block;
+
+        const colorA = mapA[codeA]?.[seqA];
+        const colorB = mapB[codeB]?.[seqB];
+
+        if (colorA && !colorB) {
+          if (!mapB[codeB]) mapB[codeB] = {};
+          mapB[codeB][seqB] = colorA;
+          console.log(`[Diagnostic] PROPAGATE: ${idA} (${colorA}) -> ${idB}`);
+          changed = true;
+        } else if (colorB && !colorA) {
+          if (!mapA[codeA]) mapA[codeA] = {};
+          mapA[codeA][seqA] = colorB;
+          console.log(`[Diagnostic] PROPAGATE: ${idB} (${colorB}) -> ${idA}`);
+          changed = true;
+        }
       });
     }
 
@@ -1425,18 +1382,16 @@ function generateRenderData(layout) {
   const lineColorMap = buildMainLineDirections();
 
   const getLineColor = (line, nodeCode, nodeType, seqNum) => {
-    const cat = String(line.MACLINECATEGORY || '').trim().toUpperCase();
-    if (cat !== 'M' && cat !== 'MAIN') return 'default';
-
     let color = 'default';
     if (nodeType === 'station') {
+      const cat = String(line.MACLINECATEGORY || '').trim().toUpperCase();
+      if (cat !== 'M' && cat !== 'MAIN') return 'default';
       color = lineColorMap.station[nodeCode]?.[seqNum] || 'default';
     } else {
       color = lineColorMap.block[nodeCode]?.[seqNum] || 'default';
     }
-    
-    // Only log for a specific station/block to avoid overwhelming console, or just log all M lines
-    // console.log(`[Diagnostic] getLineColor: ${nodeType} ${nodeCode} line ${seqNum} => ${color}`);
+
+
     return color;
   };
 
@@ -1484,13 +1439,13 @@ function generateRenderData(layout) {
         mainLineIndex = nodeLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseFloat(anchorLine.MANSEQNUMB));
       }
       if (mainLineIndex === -1) {
-        mainLineIndex = 0; // fallback to first line if no main line found
+        mainLineIndex = 0;
       }
 
       nodeLines.forEach((l, index) => {
         const yPos = MAIN_Y_START + (index - mainLineIndex) * ySpacing;
         l.y = yPos;
-        l.globalY = yPos; // For block sections
+        l.globalY = yPos;
         l.lineIndex = index;
       });
     }
@@ -1502,8 +1457,7 @@ function generateRenderData(layout) {
       const stn = layout.stations[stnCode];
       if (!stn) return;
 
-      // Find an adjacent block section to inherit its signalling for the station line visuals.
-      // Prefer the left neighbor; fall back to the right neighbor.
+
       let adjacentBsCode = null;
       const leftNeighbor = nodeIdx > 0 ? layout.sequence[nodeIdx - 1] : null;
       const rightNeighbor = nodeIdx < layout.sequence.length - 1 ? layout.sequence[nodeIdx + 1] : null;
@@ -1543,10 +1497,11 @@ function generateRenderData(layout) {
         // 'M' = main line (thick), anything else (e.g. 'L' = loop) = thin. No inference needed.
         const isPhysicallyConnectedMain = String(line.MACLINECATEGORY || '').trim().toUpperCase() === 'M';
 
-        data.stationLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, category: line.MACLINECATEGORY, lineIndex: line.lineIndex, trackColor, originalLine: line, stnCode, adjacentBsCode, isPhysicallyConnectedMain });
-        lineEnds[`${stnCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
-        lineEnds[`${stnCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
-        lineEnds[`${stnCode}-ID-${String(line.MANSTTNLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
+        const stnLineObj = { x1, x2, y, label: lineNumb, seq: seqNum, category: line.MACLINECATEGORY, lineIndex: line.lineIndex, trackColor, originalLine: line, stnCode, adjacentBsCode, isPhysicallyConnectedMain };
+        data.stationLines.push(stnLineObj);
+        lineEnds[`${stnCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: stnLineObj };
+        lineEnds[`${stnCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: stnLineObj };
+        lineEnds[`${stnCode}-ID-${String(line.MANSTTNLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: stnLineObj };
 
         const pfs = stn.platforms.filter(p => parseFloat(p.MANSEQNUMB) === seqNum);
         pfs.forEach((pf) => {
@@ -1638,13 +1593,14 @@ function generateRenderData(layout) {
 
         const trackColor = getLineColor(line, bsCode, 'block', seqNum);
 
-        // Main-line classification from MACLINECATEGORY: 'M' = main (thick), else loop/other = thin.
-        const isMainLine = String(line.MACLINECATEGORY || '').trim().toUpperCase() === 'M';
+        // All block section lines are inherently main lines
+        const isMainLine = true;
 
-        data.blockLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, lineIndex: line.lineIndex, trackColor, originalLine: line, bsCode, isMainLine });
-        lineEnds[`${bsCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
-        lineEnds[`${bsCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
-        lineEnds[`${bsCode}-ID-${String(line.MANBSLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
+        const bsLineObj = { x1, x2, y, label: lineNumb, seq: seqNum, lineIndex: line.lineIndex, trackColor, originalLine: line, bsCode, isMainLine };
+        data.blockLines.push(bsLineObj);
+        lineEnds[`${bsCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: bsLineObj };
+        lineEnds[`${bsCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: bsLineObj };
+        lineEnds[`${bsCode}-ID-${String(line.MANBSLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor, ref: bsLineObj };
       });
 
       let totalDist = parseFloat(node.distance) || 0;
@@ -1704,8 +1660,8 @@ function generateRenderData(layout) {
     if (!bsLine && !isNaN(bsLineNum)) bsLine = lineEnds[`${bsCode}-SEQ-${bsLineNum}`];
     if (!bsLine) bsLine = lineEnds[`${bsCode}-LINE-${String(conn.MANBSLINENUMB).trim()}`];
 
-
     if (stnLine && bsLine) {
+      visualEdges.push({ leA: stnLine, leB: bsLine });
       let startX, startY = stnLine.y;
       let endX, endY = bsLine.y;
 
@@ -1734,9 +1690,14 @@ function generateRenderData(layout) {
       const dy = adjEndY - adjStartY;
       const absDy = Math.abs(dy);
 
+      const actualStnLine = layout.stations[conn.MAVSTTNCODE]?.lines.find(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
+      const isMSyncType = conn.MACCONNECTNTYPE === 'M';
+      const stnCat = actualStnLine ? String(actualStnLine.MACLINECATEGORY || '').trim().toUpperCase() : '';
+      const isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
+
       const varFactor = (stnLineNum % 2 === 0) ? 1 : -1;
       const isStraight = absDy < 5;
-      const bulge = isStraight ? (dx * 0.06 * varFactor) : 0;
+      const bulge = (isStraight && !isMainLineConnection) ? (dx * 0.06 * varFactor) : 0;
 
       const cp1X = startX + dx * (0.42 + 0.04 * varFactor);
       const cp1Y = adjStartY + bulge + (absDy * 0.05 * varFactor);
@@ -1753,17 +1714,18 @@ function generateRenderData(layout) {
       const mid = { x: (q0.x + q1.x) / 2, y: (q0.y + q1.y) / 2 };
 
       let path;
-      if (isSend || isBidirectional || isMSync) {
+      if (isMainLineConnection) {
+        // MAIN line connection: perfectly straight, aligned with track Y, no offset/bend
+        if (isSend || isBidirectional || isMSync) {
+          path = `M ${startX} ${startY} L ${endX} ${endY}`;
+        } else {
+          path = `M ${endX} ${endY} L ${startX} ${startY}`;
+        }
+      } else if (isSend || isBidirectional || isMSync) {
         path = `M ${startX} ${adjStartY} C ${m01.x} ${m01.y}, ${q0.x} ${q0.y}, ${mid.x} ${mid.y} C ${q1.x} ${q1.y}, ${m23.x} ${m23.y}, ${endX} ${adjEndY}`;
       } else {
         path = `M ${endX} ${adjEndY} C ${m23.x} ${m23.y}, ${q1.x} ${q1.y}, ${mid.x} ${mid.y} C ${q0.x} ${q0.y}, ${m01.x} ${m01.y}, ${startX} ${adjStartY}`;
       }
-
-      const actualStnLine = layout.stations[conn.MAVSTTNCODE]?.lines.find(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
-      const isMSyncType = conn.MACCONNECTNTYPE === 'M';
-
-      const stnCat = actualStnLine ? String(actualStnLine.MACLINECATEGORY || '').trim().toUpperCase() : '';
-      const isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
 
       let adjacentStnIsDClass = false;
       const stnCode = conn.MAVSTTNCODE;
@@ -1787,14 +1749,7 @@ function generateRenderData(layout) {
       const stnL = stnLine.label;
       const bsL = bsLine.label;
 
-      if (true) {
-        const mLinesStn = getMainLinesForNode(conn.MAVSTTNCODE, 'station');
-        const mLinesBs = getMainLinesForNode(bsCode, 'block');
-
-        const stnMainIdx = mLinesStn.findIndex(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
-        const bsMainIdx = mLinesBs.findIndex(l => parseFloat(l.MANSEQNUMB) === bsLineNum);
-
-        const isRedundantMainLine = (stnMainIdx !== -1 && bsMainIdx !== -1 && stnMainIdx === bsMainIdx) || (adjacentStnIsDClass && isMainLineConnection);
+        const isRedundantMainLine = adjacentStnIsDClass && isMainLineConnection;
 
         let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
         if (isBidirectional || isMSync) {
@@ -1813,7 +1768,24 @@ function generateRenderData(layout) {
           isDClassConnection: adjacentStnIsDClass,
           label: (isBidirectional || isMSync) ? `${stnLine.label} ↔ ${bsLine.label}` : isSend ? `${stnLine.label} → ${bsLine.label}` : `${stnLine.label} ← ${bsLine.label}`
         });
-      }
+
+        // For MAIN line connections, immediately propagate the connection's directional
+        // color back to the station MAIN line. The connection color (blue/orange from
+        // isLeftToRight) is the authoritative source — it encodes the physical direction
+        // through the corridor. This overrides any fallback or flood-fill assignment.
+        // Only write if currently uncolored ('default') — first connection wins.
+        if (isMainLineConnection && !isBidirectional && !isMSync && stnLine.trackColor === 'default') {
+          const correctedColor = isLeftToRight ? 'blue' : 'orange';
+          // Update all lineEnds keys that point to this station line
+          Object.values(lineEnds).forEach(le => {
+            if (le.ref === stnLine.ref) {
+              le.trackColor = correctedColor;
+            }
+          });
+          // Update the lineEnd for the station line itself
+          stnLine.trackColor = correctedColor;
+          if (stnLine.ref) stnLine.ref.trackColor = correctedColor;
+        }
     }
   });
 
@@ -1872,13 +1844,14 @@ function generateRenderData(layout) {
 
         const angle = Math.atan2(endY - startY, endX - startX);
 
-        let isUnwantedSlantTrack = false;
         let adjacentStnIsDClass = false;
 
         const isD = (code) => layout.stations[code] && layout.stations[code].macclassflag === 'D';
 
         if (node.type === 'station' && isD(node.code)) adjacentStnIsDClass = true;
         if (nextNode.type === 'station' && isD(nextNode.code)) adjacentStnIsDClass = true;
+
+        let isUnwantedSlantTrack = !adjacentStnIsDClass;
 
         if (node.type === 'block') {
           const prevStnIdx = layout.sequence.findIndex(s => s.code === node.code) - 1;
@@ -1930,14 +1903,18 @@ function generateRenderData(layout) {
           const dl = dStnLines[j];
           const pl = prevStnLines[j];
           if (!dl || !pl) continue;
-          const leD = lineEnds[`${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`];
-          const leP = lineEnds[`${prevStnNode.code}-SEQ-${parseFloat(pl.MANSEQNUMB)}`];
+          const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
+          const lePKey = `${prevStnNode.code}-SEQ-${parseFloat(pl.MANSEQNUMB)}`;
+          const leD = lineEnds[leDKey];
+          const leP = lineEnds[lePKey];
           if (leD && leP) {
+            visualEdges.push({ leA: leP, leB: leD });
             data.mainLineTracks.push({
               x1: leP.rightX, y1: leP.y, x2: leD.leftX, y2: leD.y,
               angle: Math.atan2(leD.y - leP.y, leD.leftX - leP.rightX),
               trackColor: leP.trackColor || 'default',
-              bsCode: prevBsCode
+              bsCode: prevBsCode,
+              le1: leP, le2: leD
             });
           }
         }
@@ -1958,14 +1935,18 @@ function generateRenderData(layout) {
           const dl = dStnLines[j];
           const nl = nextStnLines[j];
           if (!dl || !nl) continue;
-          const leD = lineEnds[`${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`];
-          const leN = lineEnds[`${nextStnNode.code}-SEQ-${parseFloat(nl.MANSEQNUMB)}`];
+          const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
+          const leNKey = `${nextStnNode.code}-SEQ-${parseFloat(nl.MANSEQNUMB)}`;
+          const leD = lineEnds[leDKey];
+          const leN = lineEnds[leNKey];
           if (leD && leN) {
+            visualEdges.push({ leA: leD, leB: leN });
             data.mainLineTracks.push({
               x1: leD.rightX, y1: leD.y, x2: leN.leftX, y2: leN.y,
               angle: Math.atan2(leN.y - leD.y, leN.leftX - leD.rightX),
               trackColor: leD.trackColor || 'default',
-              bsCode: nextBsCode
+              bsCode: nextBsCode,
+              le1: leD, le2: leN
             });
           }
         }
@@ -2017,17 +1998,80 @@ function generateRenderData(layout) {
         rawConn: {},
         path,
         startX, startY, endX, endY,
-        color: '#ea580c',
+        color: leA.trackColor === 'blue' ? '#2563eb' : (leA.trackColor === 'orange' ? '#ea580c' : '#64748b'),
         isLeftToRight: startX < endX,
         isBidirectional: false,
         isMainLineConnection: false,
         isRedundantMainLine: false,
-        label: `${leA.label} → ${leB.label}`
+        label: `${leA.label} → ${leB.label}`,
+        leA, leB
       });
     }
   };
 
+  // Resolve unknown colors by traversing the actual physical visual MAIN connection graph
+  let changed = true;
+  let iters = 0;
+  while (changed && iters < 100) {
+    changed = false;
+    iters++;
+    visualEdges.forEach(({ leA, leB }) => {
+      if (leA && leB) {
+        if (leA.trackColor !== 'default' && leB.trackColor === 'default') {
+          leB.trackColor = leA.trackColor;
+          if (leB.ref) leB.ref.trackColor = leA.trackColor;
+          changed = true;
+        } else if (leB.trackColor !== 'default' && leA.trackColor === 'default') {
+          leA.trackColor = leB.trackColor;
+          if (leA.ref) leA.ref.trackColor = leB.trackColor;
+          changed = true;
+        }
+      }
+    });
+  }
 
+  // Hard fallback: Block sections must ALWAYS be orange or blue, never gray
+  data.blockLines.forEach(bl => {
+    if (bl.trackColor === 'default') {
+      const fallback = parseFloat(bl.seq) <= 1 ? 'blue' : 'orange';
+      bl.trackColor = fallback;
+      Object.values(lineEnds).forEach(le => {
+        if (le.ref === bl) le.trackColor = fallback;
+      });
+    }
+  });
+
+  // Hard fallback: Station MAIN lines must ALWAYS be orange or blue, never gray
+  data.stationLines.forEach(sl => {
+    if (sl.isPhysicallyConnectedMain && sl.trackColor === 'default') {
+      const fallback = parseFloat(sl.seq) <= 1 ? 'blue' : 'orange';
+      sl.trackColor = fallback;
+      Object.values(lineEnds).forEach(le => {
+        if (le.ref === sl) le.trackColor = fallback;
+      });
+    }
+  });
+
+  // ENFORCEMENT: Loop lines (non-MAIN station lines) must ALWAYS stay gray.
+  // Undo any color that flood-fill or fallback may have accidentally assigned.
+  data.stationLines.forEach(sl => {
+    if (!sl.isPhysicallyConnectedMain) {
+      sl.trackColor = 'default';
+      Object.values(lineEnds).forEach(le => {
+        if (le.ref === sl) le.trackColor = 'default';
+      });
+    }
+  });
+
+  // Update trackColors on all derived connections (mainLineTracks, data.connections)
+  data.mainLineTracks.forEach(mlt => {
+    if (mlt.le1 && mlt.le1.trackColor !== 'default') mlt.trackColor = mlt.le1.trackColor;
+    else if (mlt.le2 && mlt.le2.trackColor !== 'default') mlt.trackColor = mlt.le2.trackColor;
+  });
+  data.connections.forEach(conn => {
+    if (conn.leA && conn.leA.trackColor !== 'default') conn.color = conn.leA.trackColor === 'blue' ? '#2563eb' : '#ea580c';
+    else if (conn.leB && conn.leB.trackColor !== 'default') conn.color = conn.leB.trackColor === 'blue' ? '#2563eb' : '#ea580c';
+  });
 
   return data;
 }
