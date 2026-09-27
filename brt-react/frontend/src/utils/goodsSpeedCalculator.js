@@ -348,17 +348,17 @@ export async function calculateGoodsSpeedConfig(
           distance: dist,
 
           LOADED: {
-            defaultSpeed: null,
+            defaultRuntime: null,
             hasData: false
           },
 
           EMPTY: {
-            defaultSpeed: null,
+            defaultRuntime: null,
             hasData: false
           },
 
           COACHING: {
-            defaultSpeed: null,
+            defaultRuntime: null,
             hasData: false
           }
         };
@@ -548,6 +548,7 @@ export async function calculateGoodsSpeedConfig(
         }
 
         const apportionedRunningTimeSec = canRunningTimeSec * ds.distanceRatio;
+        const apportionedRunningTimeMin = apportionedRunningTimeSec / 60;
         const speedKmH = (sectionDistanceKm * 3600) / apportionedRunningTimeSec;
 
         if (speedKmH < 1 || speedKmH > 160) {
@@ -568,12 +569,12 @@ export async function calculateGoodsSpeedConfig(
             blockCode: canonicalCode,
             loadType,
             distanceKm: sectionDistanceKm,
-            speeds: [],
+            runtimes: [],
             rawCount: 0
           };
         }
 
-        speedSamples[aggKey].speeds.push(speedKmH);
+        speedSamples[aggKey].runtimes.push(apportionedRunningTimeMin);
         speedSamples[aggKey].rawCount++;
       });
     };
@@ -616,26 +617,26 @@ export async function calculateGoodsSpeedConfig(
 
           if (
             sample &&
-            sample.speeds &&
-            sample.speeds.length > 0
+            sample.runtimes &&
+            sample.runtimes.length > 0
           ) {
 
             // Independently calculate MAD-filtered
             // mean for this exact category.
-            const defaultSpeed =
+            const defaultRuntime =
               madFilteredMean(
-                [...sample.speeds]
+                [...sample.runtimes]
               );
 
             if (
-              defaultSpeed !== null &&
-              defaultSpeed > 0
+              defaultRuntime !== null &&
+              defaultRuntime > 0
             ) {
 
               config[dir][code][lt]
-                .defaultSpeed =
+                .defaultRuntime =
                 parseFloat(
-                  defaultSpeed.toFixed(2)
+                  defaultRuntime.toFixed(1)
                 );
 
               config[dir][code][lt]
@@ -688,17 +689,17 @@ export async function calculateGoodsSpeedConfig(
                   s.DISTANCE_KM,
 
                 LOADED: {
-                  defaultSpeed: null,
+                  defaultRuntime: null,
                   hasData: false
                 },
 
                 EMPTY: {
-                  defaultSpeed: null,
+                  defaultRuntime: null,
                   hasData: false
                 },
 
                 COACHING: {
-                  defaultSpeed: null,
+                  defaultRuntime: null,
                   hasData: false
                 }
               };

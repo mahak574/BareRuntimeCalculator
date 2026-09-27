@@ -452,12 +452,12 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
             secCode,
             fwdName,
             bwdName,
-            fwdLoadedDef: fwdStats.LOADED?.defaultSpeed,
-            fwdEmptyDef: fwdStats.EMPTY?.defaultSpeed,
-            bwdLoadedDef: bwdStats.LOADED?.defaultSpeed,
-            bwdEmptyDef: bwdStats.EMPTY?.defaultSpeed,
-            fwdCoachingDef: fwdStats.COACHING?.defaultSpeed,
-            bwdCoachingDef: bwdStats.COACHING?.defaultSpeed
+            fwdLoadedDef: fwdStats.LOADED?.defaultRuntime,
+            fwdEmptyDef: fwdStats.EMPTY?.defaultRuntime,
+            bwdLoadedDef: bwdStats.LOADED?.defaultRuntime,
+            bwdEmptyDef: bwdStats.EMPTY?.defaultRuntime,
+            fwdCoachingDef: fwdStats.COACHING?.defaultRuntime,
+            bwdCoachingDef: bwdStats.COACHING?.defaultRuntime
           });
         }
         lastStn = node;
@@ -1581,11 +1581,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   </tr>
                   <tr>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>LOADED TRAINS SPEED</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>EMPTY TRAINS SPEED</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>LOADED RUNTIME (MIN)</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>EMPTY RUNTIME (MIN)</th>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>LOADED TRAINS SPEED</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>EMPTY TRAINS SPEED</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>LOADED RUNTIME (MIN)</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>EMPTY RUNTIME (MIN)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1690,7 +1690,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   </tr>
                   <tr>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>SPEED</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>RUNTIME</th>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>SPEED</th>
                   </tr>
@@ -1853,12 +1853,12 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
         let dep = s.depTime % 24;
         const minT = Math.min(arr, dep);
         const maxT = Math.max(arr, dep);
-        
+
         // If segment crosses midnight (e.g., 23 to 1)
         if (maxT - minT > 12) {
           return arr >= viewMinTime || dep <= viewMaxTime || dep >= viewMinTime || arr <= viewMaxTime;
         }
-        
+
         return minT <= viewMaxTime && maxT >= viewMinTime;
       });
     }

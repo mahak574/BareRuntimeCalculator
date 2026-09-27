@@ -640,21 +640,27 @@ export async function runSimulation({
           const loadType = (simSpeed === 'coaching' || !simSpeed) ? 'COACHING' : (simTrainLoadType || 'LOADED');
           const ovrKey = `${dirKey}_${secCode}_${loadType}`;
           const override = goodsSpeedOverrides && goodsSpeedOverrides[ovrKey];
-
           let foundSpeed = null;
-          let defSpeed = null;
+          let foundRuntime = null;
+          let defRuntime = null;
 
           if (goodsSpeedConfig && goodsSpeedConfig[dirKey] && goodsSpeedConfig[dirKey][secCode] && goodsSpeedConfig[dirKey][secCode][loadType]) {
             const stats = goodsSpeedConfig[dirKey][secCode][loadType];
-            if (stats.defaultSpeed > 0) {
-              defSpeed = stats.defaultSpeed;
+            if (stats.defaultRuntime > 0) {
+              defRuntime = stats.defaultRuntime;
             }
           }
 
           if (override && !isNaN(parseFloat(override)) && parseFloat(override) > 0) {
-            foundSpeed = parseFloat(override);
-          } else if (defSpeed) {
-            foundSpeed = defSpeed;
+            foundRuntime = parseFloat(override);
+          } else if (defRuntime) {
+            foundRuntime = defRuntime;
+          }
+
+          if (foundRuntime && block.dist > 0) {
+            // runtime is in minutes, block.dist in km.
+            // speed (km/h) = (dist / runtime) * 60
+            foundSpeed = (block.dist / foundRuntime) * 60;
           }
 
           if (foundSpeed) {

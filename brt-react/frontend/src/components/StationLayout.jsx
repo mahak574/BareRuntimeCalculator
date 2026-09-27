@@ -411,6 +411,19 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               // Per-track signalling: look up the block section this track belongs to.
               // Avoids the old isGlobalAbsolute that changed ALL tracks when ONE section changed.
               const trkIsAbsolute = isBlockAbsolute(trk.bsCode);
+              
+              const midX = (trk.x1 + trk.x2) / 2;
+              const midY = (trk.y1 + trk.y2) / 2;
+              const isBlue = trk.trackColor === 'blue';
+              const isOrange = trk.trackColor === 'orange';
+              const arrowColor = isBlue ? '#2563ebff' : (isOrange ? '#ea580c' : '#cbd5e1');
+              
+              let arrowAngle = trk.angle;
+              if (isOrange) {
+                arrowAngle += Math.PI;
+              }
+              const arrowAngleDeg = arrowAngle * 180 / Math.PI;
+
               return (
                 <g key={`mlt-${i}`}>
                   {trkIsAbsolute ? (
@@ -424,6 +437,9 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1" />
                     </>
                   )}
+                  <g transform={`translate(${midX}, ${midY}) rotate(${arrowAngleDeg}) scale(1.5) translate(-6, -12)`}>
+                    <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill={arrowColor} />
+                  </g>
                 </g>
               )
             })}
@@ -522,13 +538,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
             {renderData.connections.map((c, i) => {
               let arrowId = "arrowGrey";
-              let mainArrowId = "arrowGreyMain";
               if (c.color === '#ea580c') {
                 arrowId = "arrowOrange";
-                mainArrowId = "arrowOrangeMain";
               } else if (c.color === '#2563ebff' || c.color === '#2563eb') {
                 arrowId = "arrowBlue";
-                mainArrowId = "arrowBlueMain";
               }
 
               return (
@@ -548,7 +561,6 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeLinejoin="round"
                       fill="none"
                       opacity="1"
-                      markerMid={(c.isRedundantMainLine && !c.isDClassConnection) ? "url(#arrowBiMain)" : "none"}
                       markerStart={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
                       markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
                     />
@@ -560,7 +572,6 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeLinejoin="round"
                       fill="none"
                       opacity="1"
-                      markerMid={(c.isRedundantMainLine && !c.isDClassConnection) ? `url(#${mainArrowId})` : "none"}
                       markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : `url(#${arrowId})`}
                     />
                   )}
@@ -1267,13 +1278,14 @@ function generateRenderData(layout) {
         
         const slCat = String(sl?.MACLINECATEGORY || '').trim().toUpperCase();
         const blCat = String(bl?.MACLINECATEGORY || '').trim().toUpperCase();
-        if (sl && bl && (slCat === 'M' || slCat === 'MAIN') && (blCat === 'M' || blCat === 'MAIN')) {
+
+        if (sl && (slCat === 'M' || slCat === 'MAIN')) {
            const slSeq = parseFloat(sl.MANSEQNUMB);
-           const blSeq = parseFloat(bl.MANSEQNUMB);
-           const slId = `S|${conn.MAVSTTNCODE}|${slSeq}`;
-           const blId = `B|${bsCode}|${blSeq}`;
            
-           graphEdges.push([slId, blId]);
+           if (bl && (blCat === 'M' || blCat === 'MAIN')) {
+             const blSeq = parseFloat(bl.MANSEQNUMB);
+             graphEdges.push([`S|${conn.MAVSTTNCODE}|${slSeq}`, `B|${bsCode}|${blSeq}`]);
+           }
 
            const flag = String(conn.MACRECVSENDFLAG || '').trim();
            const isSend = flag === 'S';
@@ -1289,12 +1301,15 @@ function generateRenderData(layout) {
            
            if (isLtoR !== null) {
              const color = isLtoR ? 'blue' : 'orange';
-             console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}) -> ${bsCode} (blSeq ${blSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
+             console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
              if (!dirMap.station[conn.MAVSTTNCODE]) dirMap.station[conn.MAVSTTNCODE] = {};
              dirMap.station[conn.MAVSTTNCODE][slSeq] = color;
              
-             if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
-             dirMap.block[bsCode][blSeq] = color;
+             if (bl && (blCat === 'M' || blCat === 'MAIN')) {
+               const blSeq = parseFloat(bl.MANSEQNUMB);
+               if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
+               dirMap.block[bsCode][blSeq] = color;
+             }
            }
         }
       }
@@ -1352,6 +1367,22 @@ function generateRenderData(layout) {
         }
       }
     });
+
+    // Fallback seed ONLY for the very first station if there are no explicit send/recv flags anywhere in the dataset.
+    // This allows the color to correctly inherit/propagate through the entire corridor from left (blue) and right (orange).
+    const firstStn = layout.sequence.find(n => n.type === 'station');
+    if (firstStn) {
+      const mLines = getMainLinesForNode(firstStn.code, 'station');
+      mLines.forEach((ml, idx) => {
+        const seq = parseFloat(ml.MANSEQNUMB);
+        if (!dirMap.station[firstStn.code]?.[seq]) {
+          const color = idx === 0 ? 'blue' : 'orange';
+          console.log(`[Diagnostic] FALLBACK SEED for first station: ${firstStn.code} line ${seq} => ${color}`);
+          if (!dirMap.station[firstStn.code]) dirMap.station[firstStn.code] = {};
+          dirMap.station[firstStn.code][seq] = color;
+        }
+      });
+    }
 
     let changed = true;
     let iter = 0;
