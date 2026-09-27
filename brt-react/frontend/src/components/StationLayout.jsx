@@ -1851,7 +1851,10 @@ function generateRenderData(layout) {
         if (node.type === 'station' && isD(node.code)) adjacentStnIsDClass = true;
         if (nextNode.type === 'station' && isD(nextNode.code)) adjacentStnIsDClass = true;
 
-        let isUnwantedSlantTrack = !adjacentStnIsDClass;
+        // Suppress the connecting segment ONLY when both ends are stations and neither is D-class.
+        // Station↔Block and Block↔Block spans must always be drawn to keep the main line continuous.
+        const bothAreNonDStations = node.type === 'station' && nextNode.type === 'station' && !adjacentStnIsDClass;
+        const isUnwantedSlantTrack = bothAreNonDStations;
 
         if (node.type === 'block') {
           const prevStnIdx = layout.sequence.findIndex(s => s.code === node.code) - 1;
