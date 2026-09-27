@@ -629,6 +629,12 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
     document.body.removeChild(link);
   };
 
+  const globalStnNodes = layout?.sequence?.filter(n => n.type === 'station') || [];
+  const globalStartName = (graphData?.layoutStations?.[0]?.name || globalStnNodes[0]?.name || 'START').toUpperCase();
+  const globalEndName = (graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || globalStnNodes[globalStnNodes.length - 1]?.name || 'END').toUpperCase();
+  const globalDownLabel = `${globalStartName} → ${globalEndName}`;
+  const globalUpLabel = `${globalEndName} → ${globalStartName}`;
+
   return (
     <div className="time-distance-graph card glass" style={{ marginTop: '0px' }} ref={containerRef}>
       <div style={{ padding: '8px 10px', borderBottom: '1px solid #333', display: 'flex', justifyContent: 'flex-start', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto' }}>
@@ -817,8 +823,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               <thead>
                 <tr style={{ backgroundColor: '#f1f5f9' }}>
                   <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>Statistics</th>
-                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>DOWN</th>
-                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>UP</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>{globalDownLabel}</th>
+                  <th style={{ padding: '12px', textAlign: 'center', border: '1px solid #cbd5e1' }}>{globalUpLabel}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1003,8 +1009,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 }
               });
 
-              const fwdLabel = `${graphData?.layoutStations?.[0]?.code || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'}`;
-              const bwdLabel = `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'} → ${graphData?.layoutStations?.[0]?.code || 'KOTA'}`;
+              const fwdLabel = `${(graphData?.layoutStations?.[0]?.code || layout?.sequence?.find(n => n.type === 'station')?.code || 'START').toUpperCase()} → ${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || layout?.sequence?.filter(n => n.type === 'station').pop()?.code || 'END').toUpperCase()}`;
+              const bwdLabel = `${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || layout?.sequence?.filter(n => n.type === 'station').pop()?.code || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.code || layout?.sequence?.find(n => n.type === 'station')?.code || 'START').toUpperCase()}`;
 
               return (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
@@ -1066,8 +1072,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 }
               });
 
-              const fwdLabel = `${graphData?.layoutStations?.[0]?.code || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'}`;
-              const bwdLabel = `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || 'BINA'} → ${graphData?.layoutStations?.[0]?.code || 'KOTA'}`;
+              const fwdLabel = `${(graphData?.layoutStations?.[0]?.code || layout?.sequence?.find(n => n.type === 'station')?.code || 'START').toUpperCase()} → ${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || layout?.sequence?.filter(n => n.type === 'station').pop()?.code || 'END').toUpperCase()}`;
+              const bwdLabel = `${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.code || layout?.sequence?.filter(n => n.type === 'station').pop()?.code || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.code || layout?.sequence?.find(n => n.type === 'station')?.code || 'START').toUpperCase()}`;
 
               return (
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
@@ -1125,8 +1131,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'row', gap: '8px' }}>
                   {[
-                    { dir: 'forward', label: `${graphData?.layoutStations?.[0]?.name || 'KOTA'} → ${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || 'BINA'}` },
-                    { dir: 'backward', label: `${graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || 'BINA'} → ${graphData?.layoutStations?.[0]?.name || 'KOTA'}` }
+                    { dir: 'forward', label: `${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()} → ${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()}` },
+                    { dir: 'backward', label: `${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()}` }
                   ].map(({ dir, label }) => {
                     const isChecked = simDirections.includes(dir);
                     return (
@@ -1570,8 +1576,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
                 <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f1f5f9', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', zIndex: 10 }}>
                   <tr>
-                    <th colSpan="3" style={{ padding: '8px', borderRight: '2px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>DOWN DIRECTION (FORWARD)</th>
-                    <th colSpan="3" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>UP DIRECTION (BACKWARD)</th>
+                    <th colSpan="3" style={{ padding: '8px', borderRight: '2px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>{`${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()} → ${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()}`}</th>
+                    <th colSpan="3" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>{`${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()}`}</th>
                   </tr>
                   <tr>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
@@ -1679,8 +1685,8 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
                 <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f1f5f9', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', zIndex: 10 }}>
                   <tr>
-                    <th colSpan="2" style={{ padding: '8px', borderRight: '2px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>DOWN DIRECTION (FORWARD)</th>
-                    <th colSpan="2" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>UP DIRECTION (BACKWARD)</th>
+                    <th colSpan="2" style={{ padding: '8px', borderRight: '2px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>{`${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()} → ${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()}`}</th>
+                    <th colSpan="2" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>{`${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()}`}</th>
                   </tr>
                   <tr>
                     <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
@@ -1839,6 +1845,23 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
 
     const tMin = Math.min(...train.stops.map(s => Math.min(s.arrTime, s.depTime)));
     const tMax = Math.max(...train.stops.map(s => Math.max(s.arrTime, s.depTime)));
+
+    if (windowMode === '24h') {
+      // Treat the 24-hour schedule as circular
+      return train.stops.some(s => {
+        let arr = s.arrTime % 24;
+        let dep = s.depTime % 24;
+        const minT = Math.min(arr, dep);
+        const maxT = Math.max(arr, dep);
+        
+        // If segment crosses midnight (e.g., 23 to 1)
+        if (maxT - minT > 12) {
+          return arr >= viewMinTime || dep <= viewMaxTime || dep >= viewMinTime || arr <= viewMaxTime;
+        }
+        
+        return minT <= viewMaxTime && maxT >= viewMinTime;
+      });
+    }
 
     return tMin <= viewMaxTime && tMax >= viewMinTime;
   });

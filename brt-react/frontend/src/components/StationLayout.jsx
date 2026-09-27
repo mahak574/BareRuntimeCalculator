@@ -24,6 +24,7 @@ const isDClass = (stnObj) => {
  * @param {number} navTrigger - A numeric trigger to force navigation updates
  */
 const TRACK_LINE_WIDTH = 4;
+const MAIN_TRACK_WIDTH = 8;
 
 export default function StationLayout({ layout, scrollToStation, navTrigger, onModifyLayout }) {
   const [minimapHoverCode, setMinimapHoverCode] = useState(null);
@@ -215,6 +216,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
   const stationNodes = layout.sequence.filter(n => n.type === 'station');
   const leftStnCode = stationNodes.length > 0 ? stationNodes[0].code : 'Start';
   const rightStnCode = stationNodes.length > 1 ? stationNodes[stationNodes.length - 1].code : (stationNodes.length > 0 ? stationNodes[0].code : 'End');
+  const downName = `${leftStnCode} → ${rightStnCode}`;
+  const upName = `${rightStnCode} → ${leftStnCode}`;
 
   const scrollRef = useRef(null);
   const [scrollPos, setScrollPos] = React.useState({ left: 0, top: 0, width: 0, height: 0 });
@@ -294,29 +297,29 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
           style={{ backgroundColor: '#f8fafc', display: 'block', backgroundImage: 'radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f5f9 100%)' }}
         >
           <defs>
-            <marker id="arrowBlue" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBlue" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" />
             </marker>
-            <marker id="arrowOrange" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowOrange" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" />
             </marker>
-            <marker id="arrowGrey" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowGrey" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#cbd5e1" />
             </marker>
-            <marker id="arrowBi" markerWidth="24" markerHeight="24" refX="20" refY="12" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBi" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#10b981" />
             </marker>
 
-            <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowGreyMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowGreyMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#cbd5e1" transform="scale(1.5)" />
             </marker>
-            <marker id="arrowBiMain" markerWidth="36" markerHeight="36" refX="30" refY="18" orient="auto" markerUnits="userSpaceOnUse">
+            <marker id="arrowBiMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#10b981" transform="scale(1.5)" />
             </marker>
             <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
@@ -401,8 +404,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
 
             {renderData.mainLineTracks.map((trk, i) => {
-              const dx = Math.sin(trk.angle) * 5;
-              const dy = Math.cos(trk.angle) * 5;
+              const dx = Math.sin(trk.angle) * 2;
+              const dy = Math.cos(trk.angle) * 2;
               const sleepersFill = trk.trackColor === 'orange' ? "url(#sleepersOrange)" : trk.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)";
               const railFill = trk.trackColor === 'orange' ? "url(#railGradOrange)" : trk.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)";
               // Per-track signalling: look up the block section this track belongs to.
@@ -412,11 +415,11 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 <g key={`mlt-${i}`}>
                   {trkIsAbsolute ? (
                     <>
-                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
+                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
                     </>
                   ) : (
                     <>
-                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={sleepersFill} strokeWidth={TRACK_LINE_WIDTH} opacity="0.9" />
+                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={sleepersFill} strokeWidth={MAIN_TRACK_WIDTH} opacity="0.9" />
                       <line x1={trk.x1 - dx} y1={trk.y1 - dy} x2={trk.x2 - dx} y2={trk.y2 - dy} stroke={railFill} strokeWidth="1" />
                       <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1" />
                     </>
@@ -456,13 +459,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 )}
                 {isBlockAbsolute(sl.adjacentBsCode) ? (
                   // Absolute signalling: filled rect, no stroke border, no shadow
-                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
+                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
                 ) : (
                   // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
                   <>
-                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
-                    <line x1={sl.x1} y1={sl.y - 1} x2={sl.x2} y2={sl.y - 1} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                    <line x1={sl.x1} y1={sl.y + 1} x2={sl.x2} y2={sl.y + 1} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
+                    <line x1={sl.x1} y1={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                    <line x1={sl.x1} y1={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                   </>
                 )}
               </g>
@@ -496,20 +499,21 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   {isAutoSignalling ? (
                     /* Auto Signalling: thinner sleepers + two rails, no drop-shadow filter */
                     <>
-                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={TRACK_LINE_WIDTH} opacity="1" />
-                      <line x1={bl.x1} y1={bl.y - 1} x2={bl.x2} y2={bl.y - 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                      <line x1={bl.x1} y1={bl.y + 1} x2={bl.x2} y2={bl.y + 1} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
+                      <line x1={bl.x1} y1={bl.y - 2} x2={bl.x2} y2={bl.y - 2} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                      <line x1={bl.x1} y1={bl.y + 2} x2={bl.x2} y2={bl.y + 2} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                     </>
                   ) : (
                     /* Absolute Signalling: filled rect, no stroke border, no shadow */
-                    <rect
-                      x={bl.x1}
-                      y={bl.y - 5}
-                      width={bl.x2 - bl.x1}
-                      height={10}
-                      rx="2"
-                      fill={solidFillLight}
+                    <line
+                      x1={bl.x1}
+                      y1={bl.y}
+                      x2={bl.x2}
+                      y2={bl.y}
+                      stroke={solidFillLight}
+                      strokeWidth={MAIN_TRACK_WIDTH}
                       opacity="1"
+                      strokeLinecap="round"
                     />
                   )}
                 </g>
@@ -574,7 +578,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
             {renderData.platforms.map((pf, i) => (
               <g key={`pf-${i}`} >
-                <rect x={pf.x} y={pf.y} width={pf.w} height={pf.h} fill="url(#concrete)" stroke="#94a3b8" strokeWidth="2" rx="4" />
+                <rect x={pf.x} y={pf.y} width={pf.w} height={pf.h} fill="#E7D8B1" stroke="#8A7650" strokeWidth="2" rx="4" />
                 <rect
                   x={pf.x + 2}
                   y={(pf.isUp ? pf.y + pf.h - 2 : pf.y + 2) - 1.25}
@@ -895,7 +899,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                           if (exists) {
                             window.alert("already exist and please choose another");
                           } else {
-                            if (onModifyLayout) onModifyLayout('station', 'add-platform', contextMenu.lineData, { vPos: vPos === 'Up' ? 'U' : 'D', hPos, platformName: name });
+                            if (onModifyLayout) onModifyLayout('station', 'add-platform', contextMenu.lineData, { vPos: vPos === 'U' ? 'U' : 'D', hPos, platformName: name });
                           }
                         }
                         setContextMenu({ ...contextMenu, visible: false });
@@ -936,8 +940,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       );
                     };
 
-                    const upOpts = renderDirOptions('Up', 'Up', upPfs, true);
-                    const downOpts = renderDirOptions('Down', 'Down', downPfs, !upOpts);
+                    const upOpts = renderDirOptions('U', upName, upPfs, true);
+                    const downOpts = renderDirOptions('D', downName, downPfs, !upOpts);
 
                     return (
                       <>
@@ -967,7 +971,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                     }
 
                     return pfs.map((pf, idx) => {
-                      const posLabel = pf.MAVPFVPOSITION === 'U' ? 'Up' : 'Down';
+                      const posLabel = pf.MAVPFVPOSITION === 'U' ? upName : downName;
                       const hPosLabel = pf.MAVPFHPOSITION === 'L' ? 'Left' : (pf.MAVPFHPOSITION === 'R' ? 'Right' : 'Middle');
                       return (
                         <div key={idx} style={{ padding: '6px 16px', cursor: 'pointer', color: '#dc2626', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }} className="ctx-menu-hover" onClick={(e) => {
@@ -1005,7 +1009,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
-                  }}>Up</div>
+                  }}>{upName}</div>
                   <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter the name for the new station line:");
                     if (name) {
@@ -1019,7 +1023,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
-                  }}>Down</div>
+                  }}>{downName}</div>
                 </div>
               </div>
 
@@ -1087,13 +1091,13 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   boxShadow: '0 4px 15px rgba(0,0,0,0.1)', borderRadius: '6px', border: '1px solid #cbd5e1', padding: '8px 0', minWidth: '160px', display: 'none'
                 }}>
                   <div style={{ padding: '4px 16px', fontWeight: 'bold', fontSize: '11px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '4px' }}>Add at Top</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>UP</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>DOWN</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>{upName.toUpperCase()}</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>{downName.toUpperCase()}</div>
                   <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'top', direction: 'BOTH' }); setContextMenu({ ...contextMenu, visible: false }); }}>BOTH</div>
 
                   <div style={{ padding: '4px 16px', fontWeight: 'bold', fontSize: '11px', color: '#64748b', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', marginTop: '8px' }}>Add at Bottom</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>UP</div>
-                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>DOWN</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'UP' }); setContextMenu({ ...contextMenu, visible: false }); }}>{upName.toUpperCase()}</div>
+                  <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'DN' }); setContextMenu({ ...contextMenu, visible: false }); }}>{downName.toUpperCase()}</div>
                   <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => { if (onModifyLayout) onModifyLayout('station', 'add', contextMenu.data, { position: 'bottom', direction: 'BOTH' }); setContextMenu({ ...contextMenu, visible: false }); }}>BOTH</div>
                 </div>
               </div>
@@ -1220,35 +1224,183 @@ function generateRenderData(layout) {
     nodeIndexMap[n.code] = i;
   });
 
-  const stationLineDirs = buildStationLineDirections(layout);
+  const buildMainLineDirections = () => {
+    const dirMap = { station: {}, block: {} };
+    if (!layout || !layout.connections) return dirMap;
 
-  const getLineColor = (line, nodeCode, nodeType, seqNum) => {
-    if (nodeType === 'station') {
-      const dir = stationLineDirs[nodeCode]?.[seqNum];
-      if (dir === 'DOWN') return 'blue';
-      if (dir === 'UP') return 'orange';
-      return 'default';
-    }
-    // Block section coloring
-    const bs = layout.blockSections[nodeCode];
-    if (!bs) return 'default';
-    let mLines = bs.lines.filter(l => {
-      const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-      return cat === 'M' || cat === 'MAIN';
+    const getStnLine = (stnCode, stnLineNum) => {
+       const stn = layout.stations[stnCode];
+       if (!stn) return null;
+       let l = stn.lines.find(l => String(l.MANSTTNLINENUMB).trim() === stnLineNum);
+       if (!l) l = stn.lines.find(l => String(l.MAVLINENUMB).trim() === stnLineNum);
+       if (!l) l = stn.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(stnLineNum));
+       return l;
+    };
+    
+    const getBsLine = (bsCode, blkLineNum) => {
+       const bs = layout.blockSections[bsCode];
+       if (!bs) return null;
+       let l = bs.lines.find(l => String(l.MANBLCKLINENUMB).trim() === blkLineNum);
+       if (!l) l = bs.lines.find(l => String(l.MAVLINENUMB).trim() === blkLineNum);
+       if (!l) l = bs.lines.find(l => parseFloat(l.MANSEQNUMB) === parseFloat(blkLineNum));
+       return l;
+    };
+
+    const graphEdges = [];
+    
+    layout.connections.forEach(conn => {
+      let bsCode = conn.MAVBLCKSCTN || '';
+      if (nodeIndexMap[bsCode] === undefined) {
+        const reversed = String(bsCode).split('-').reverse().join('-');
+        if (nodeIndexMap[reversed] !== undefined) bsCode = reversed;
+      }
+      
+      const stnIndex = nodeIndexMap[conn.MAVSTTNCODE];
+      const bsIndex = nodeIndexMap[bsCode];
+      
+      if (stnIndex !== undefined && bsIndex !== undefined) {
+        const stnLineNum = String(conn.MANSTTNLINENUMB).trim();
+        const blkLineNum = String(conn.MANBLCKLINENUMB).trim();
+        
+        const sl = getStnLine(conn.MAVSTTNCODE, stnLineNum);
+        const bl = getBsLine(bsCode, blkLineNum);
+        
+        const slCat = String(sl?.MACLINECATEGORY || '').trim().toUpperCase();
+        const blCat = String(bl?.MACLINECATEGORY || '').trim().toUpperCase();
+        if (sl && bl && (slCat === 'M' || slCat === 'MAIN') && (blCat === 'M' || blCat === 'MAIN')) {
+           const slSeq = parseFloat(sl.MANSEQNUMB);
+           const blSeq = parseFloat(bl.MANSEQNUMB);
+           const slId = `S|${conn.MAVSTTNCODE}|${slSeq}`;
+           const blId = `B|${bsCode}|${blSeq}`;
+           
+           graphEdges.push([slId, blId]);
+
+           const flag = String(conn.MACRECVSENDFLAG || '').trim();
+           const isSend = flag === 'S';
+           const isRecv = flag === 'R';
+           const isMSync = flag === 'M_SYNC';
+           
+           let isLtoR = null;
+           if (isSend || isMSync) {
+             isLtoR = bsIndex > stnIndex;
+           } else if (isRecv) {
+             isLtoR = bsIndex < stnIndex;
+           }
+           
+           if (isLtoR !== null) {
+             const color = isLtoR ? 'blue' : 'orange';
+             console.log(`[Diagnostic] INITIAL SEED: ${conn.MAVSTTNCODE} (slSeq ${slSeq}) -> ${bsCode} (blSeq ${blSeq}), Flag: ${flag}, isLtoR: ${isLtoR} => ${color}`);
+             if (!dirMap.station[conn.MAVSTTNCODE]) dirMap.station[conn.MAVSTTNCODE] = {};
+             dirMap.station[conn.MAVSTTNCODE][slSeq] = color;
+             
+             if (!dirMap.block[bsCode]) dirMap.block[bsCode] = {};
+             dirMap.block[bsCode][blSeq] = color;
+           }
+        }
+      }
     });
-    if (mLines.length === 0) {
-      mLines = bs.lines.filter(l => {
-        const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-        return cat !== 'LOOP' && cat !== 'INDEPENDENT';
+
+    layout.sequence.forEach((node, i) => {
+      if (i === layout.sequence.length - 1) return;
+      const nextNode = layout.sequence[i + 1];
+
+      const mLinesA = getMainLinesForNode(node.code, node.type);
+      const mLinesB = getMainLinesForNode(nextNode.code, nextNode.type);
+      
+      const maxLen = Math.max(mLinesA.length, mLinesB.length);
+      for (let j = 0; j < maxLen; j++) {
+        const la = mLinesA[j];
+        const lb = mLinesB[j];
+        if (!la || !lb) continue;
+        
+        const typeA = node.type === 'station' ? 'S' : 'B';
+        const typeB = nextNode.type === 'station' ? 'S' : 'B';
+        const idA = `${typeA}|${node.code}|${parseFloat(la.MANSEQNUMB)}`;
+        const idB = `${typeB}|${nextNode.code}|${parseFloat(lb.MANSEQNUMB)}`;
+        graphEdges.push([idA, idB]);
+      }
+    });
+
+    layout.sequence.forEach((node, i) => {
+      if (node.type === 'station' && layout.stations[node.code] && layout.stations[node.code].macclassflag === 'D') {
+        const dStnLines = getMainLinesForNode(node.code, 'station');
+        let prevStnNode = null;
+        for (let k = i - 1; k >= 0; k--) {
+          if (layout.sequence[k].type === 'station') { prevStnNode = layout.sequence[k]; break; }
+        }
+        if (prevStnNode) {
+          const pStnLines = getMainLinesForNode(prevStnNode.code, 'station');
+          const maxLen = Math.max(dStnLines.length, pStnLines.length);
+          for (let j = 0; j < maxLen; j++) {
+            if (dStnLines[j] && pStnLines[j]) {
+              graphEdges.push([`S|${prevStnNode.code}|${parseFloat(pStnLines[j].MANSEQNUMB)}`, `S|${node.code}|${parseFloat(dStnLines[j].MANSEQNUMB)}`]);
+            }
+          }
+        }
+        let nextStnNode = null;
+        for (let k = i + 1; k < layout.sequence.length; k++) {
+          if (layout.sequence[k].type === 'station') { nextStnNode = layout.sequence[k]; break; }
+        }
+        if (nextStnNode && layout.stations[nextStnNode.code].macclassflag !== 'D') {
+          const nStnLines = getMainLinesForNode(nextStnNode.code, 'station');
+          const maxLen = Math.max(dStnLines.length, nStnLines.length);
+          for (let j = 0; j < maxLen; j++) {
+            if (dStnLines[j] && nStnLines[j]) {
+              graphEdges.push([`S|${node.code}|${parseFloat(dStnLines[j].MANSEQNUMB)}`, `S|${nextStnNode.code}|${parseFloat(nStnLines[j].MANSEQNUMB)}`]);
+            }
+          }
+        }
+      }
+    });
+
+    let changed = true;
+    let iter = 0;
+    while (changed && iter < 100) {
+      changed = false;
+      iter++;
+      graphEdges.forEach(([idA, idB]) => {
+         const [typeA, codeA, seqA] = idA.split('|');
+         const [typeB, codeB, seqB] = idB.split('|');
+         
+         const mapA = typeA === 'S' ? dirMap.station : dirMap.block;
+         const mapB = typeB === 'S' ? dirMap.station : dirMap.block;
+         
+         const colorA = mapA[codeA]?.[seqA];
+         const colorB = mapB[codeB]?.[seqB];
+         
+         if (colorA && !colorB) {
+           if (!mapB[codeB]) mapB[codeB] = {};
+           mapB[codeB][seqB] = colorA;
+           console.log(`[Diagnostic] PROPAGATE: ${idA} (${colorA}) -> ${idB}`);
+           changed = true;
+         } else if (colorB && !colorA) {
+           if (!mapA[codeA]) mapA[codeA] = {};
+           mapA[codeA][seqA] = colorB;
+           console.log(`[Diagnostic] PROPAGATE: ${idB} (${colorB}) -> ${idA}`);
+           changed = true;
+         }
       });
     }
-    mLines.sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
-    const mainLineIndex = mLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseFloat(seqNum));
 
-    // Check adjacent stations to infer block direction if possible, else fallback
-    if (mainLineIndex === 0) return 'blue';
-    if (mainLineIndex === 1) return 'orange';
-    return 'default';
+    return dirMap;
+  };
+
+  const lineColorMap = buildMainLineDirections();
+
+  const getLineColor = (line, nodeCode, nodeType, seqNum) => {
+    const cat = String(line.MACLINECATEGORY || '').trim().toUpperCase();
+    if (cat !== 'M' && cat !== 'MAIN') return 'default';
+
+    let color = 'default';
+    if (nodeType === 'station') {
+      color = lineColorMap.station[nodeCode]?.[seqNum] || 'default';
+    } else {
+      color = lineColorMap.block[nodeCode]?.[seqNum] || 'default';
+    }
+    
+    // Only log for a specific station/block to avoid overwhelming console, or just log all M lines
+    // console.log(`[Diagnostic] getLineColor: ${nodeType} ${nodeCode} line ${seqNum} => ${color}`);
+    return color;
   };
 
   let currentX = 80;
@@ -1350,7 +1502,11 @@ function generateRenderData(layout) {
 
         const trackColor = getLineColor(line, stnCode, 'station', seqNum);
 
-        data.stationLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, category: line.MACLINECATEGORY, lineIndex: line.lineIndex, trackColor, originalLine: line, stnCode, adjacentBsCode });
+        // Main-line classification is determined directly from MACLINECATEGORY in the source data.
+        // 'M' = main line (thick), anything else (e.g. 'L' = loop) = thin. No inference needed.
+        const isPhysicallyConnectedMain = String(line.MACLINECATEGORY || '').trim().toUpperCase() === 'M';
+
+        data.stationLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, category: line.MACLINECATEGORY, lineIndex: line.lineIndex, trackColor, originalLine: line, stnCode, adjacentBsCode, isPhysicallyConnectedMain });
         lineEnds[`${stnCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
         lineEnds[`${stnCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
         lineEnds[`${stnCode}-ID-${String(line.MANSTTNLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
@@ -1445,7 +1601,10 @@ function generateRenderData(layout) {
 
         const trackColor = getLineColor(line, bsCode, 'block', seqNum);
 
-        data.blockLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, lineIndex: line.lineIndex, trackColor, originalLine: line, bsCode });
+        // Main-line classification from MACLINECATEGORY: 'M' = main (thick), else loop/other = thin.
+        const isMainLine = String(line.MACLINECATEGORY || '').trim().toUpperCase() === 'M';
+
+        data.blockLines.push({ x1, x2, y, label: lineNumb, seq: seqNum, lineIndex: line.lineIndex, trackColor, originalLine: line, bsCode, isMainLine });
         lineEnds[`${bsCode}-LINE-${lineNumb}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
         lineEnds[`${bsCode}-SEQ-${seqNum}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
         lineEnds[`${bsCode}-ID-${String(line.MANBSLINENUMB).trim()}`] = { leftX: x1, rightX: x2, y, label: `L${lineNumb}`, trackColor };
@@ -1590,21 +1749,15 @@ function generateRenderData(layout) {
 
       const stnL = stnLine.label;
       const bsL = bsLine.label;
-      let isUnwantedSlant = false;
-      if (adjacentStnIsDClass) {
-        if ((stnL === 'L2' && bsL === 'L1') || (stnL === 'L1' && bsL === 'L2')) {
-          isUnwantedSlant = true;
-        }
-      }
 
-      if (!isUnwantedSlant) {
+      if (true) {
         const mLinesStn = getMainLinesForNode(conn.MAVSTTNCODE, 'station');
         const mLinesBs = getMainLinesForNode(bsCode, 'block');
 
         const stnMainIdx = mLinesStn.findIndex(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
         const bsMainIdx = mLinesBs.findIndex(l => parseFloat(l.MANSEQNUMB) === bsLineNum);
 
-        const isRedundantMainLine = (stnMainIdx !== -1 && bsMainIdx !== -1 && stnMainIdx === bsMainIdx) || adjacentStnIsDClass;
+        const isRedundantMainLine = (stnMainIdx !== -1 && bsMainIdx !== -1 && stnMainIdx === bsMainIdx) || (adjacentStnIsDClass && isMainLineConnection);
 
         let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
         if (isBidirectional || isMSync) {
@@ -1703,9 +1856,8 @@ function generateRenderData(layout) {
           }
         }
 
-        if (adjacentStnIsDClass) {
-          isUnwantedSlantTrack = true;
-        }
+        // D-class stations dynamically connect main lines based on physical alignment 
+        // (ordered by MANSEQNUMB), so we do NOT set isUnwantedSlantTrack = true here.
 
         if (!isUnwantedSlantTrack) {
           let trackColor = leA.trackColor || 'default';
@@ -1716,6 +1868,69 @@ function generateRenderData(layout) {
           data.mainLineTracks.push({
             x1: startX, y1: startY, x2: endX, y2: endY, angle, trackColor, bsCode
           });
+        }
+      }
+    }
+  });
+
+  // Dedicated pass to ensure D-class station main-line continuity across missing block sections
+  layout.sequence.forEach((node, i) => {
+    if (node.type === 'station' && layout.stations[node.code] && layout.stations[node.code].macclassflag === 'D') {
+      const dStnLines = getMainLinesForNode(node.code, 'station').sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
+
+      // Look backward for previous station
+      let prevStnNode = null;
+      let prevBsCode = null;
+      for (let k = i - 1; k >= 0; k--) {
+        if (layout.sequence[k].type === 'block') prevBsCode = layout.sequence[k].code;
+        if (layout.sequence[k].type === 'station') { prevStnNode = layout.sequence[k]; break; }
+      }
+
+      if (prevStnNode) {
+        const prevStnLines = getMainLinesForNode(prevStnNode.code, 'station').sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
+        const maxLen = Math.max(dStnLines.length, prevStnLines.length);
+        for (let j = 0; j < maxLen; j++) {
+          const dl = dStnLines[j];
+          const pl = prevStnLines[j];
+          if (!dl || !pl) continue;
+          const leD = lineEnds[`${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`];
+          const leP = lineEnds[`${prevStnNode.code}-SEQ-${parseFloat(pl.MANSEQNUMB)}`];
+          if (leD && leP) {
+            data.mainLineTracks.push({
+              x1: leP.rightX, y1: leP.y, x2: leD.leftX, y2: leD.y,
+              angle: Math.atan2(leD.y - leP.y, leD.leftX - leP.rightX),
+              trackColor: leP.trackColor || 'default',
+              bsCode: prevBsCode
+            });
+          }
+        }
+      }
+
+      // Look forward for next station
+      let nextStnNode = null;
+      let nextBsCode = null;
+      for (let k = i + 1; k < layout.sequence.length; k++) {
+        if (layout.sequence[k].type === 'block') nextBsCode = layout.sequence[k].code;
+        if (layout.sequence[k].type === 'station') { nextStnNode = layout.sequence[k]; break; }
+      }
+
+      if (nextStnNode && layout.stations[nextStnNode.code].macclassflag !== 'D') {
+        const nextStnLines = getMainLinesForNode(nextStnNode.code, 'station').sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
+        const maxLen = Math.max(dStnLines.length, nextStnLines.length);
+        for (let j = 0; j < maxLen; j++) {
+          const dl = dStnLines[j];
+          const nl = nextStnLines[j];
+          if (!dl || !nl) continue;
+          const leD = lineEnds[`${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`];
+          const leN = lineEnds[`${nextStnNode.code}-SEQ-${parseFloat(nl.MANSEQNUMB)}`];
+          if (leD && leN) {
+            data.mainLineTracks.push({
+              x1: leD.rightX, y1: leD.y, x2: leN.leftX, y2: leN.y,
+              angle: Math.atan2(leN.y - leD.y, leN.leftX - leD.rightX),
+              trackColor: leD.trackColor || 'default',
+              bsCode: nextBsCode
+            });
+          }
         }
       }
     }

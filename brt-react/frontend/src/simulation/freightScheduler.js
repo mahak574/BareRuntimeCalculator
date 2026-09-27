@@ -236,15 +236,30 @@ export async function runSimulation({
     const currentDayIdx = Math.floor(depMins / 1440);
 
     for (const cand of blockInfo.matchedCandidates) {
-      let dayOffset = 0;
+      let segDep, segArr;
       if (!cand.isSimulated) {
-        if (simDay !== 'All') {
+        if (simDay === 'All') {
+          const baseK = Math.floor(cand.segDepBase / 1440);
+          segDep = (cand.segDepBase - baseK * 1440) + currentDayIdx * 1440;
+          segArr = (cand.segArrBase - baseK * 1440) + currentDayIdx * 1440;
+          
+          if (segDep - depMins > 720) {
+            segDep -= 1440;
+            segArr -= 1440;
+          } else if (depMins - segArr > 720) {
+            segDep += 1440;
+            segArr += 1440;
+          }
+        } else {
           if (cand.daysBits && cand.daysBits.length === 7 && cand.daysBits[currentDayIdx % 7] !== '1') continue;
+          let dayOffset = currentDayIdx * 1440;
+          segDep = cand.segDepBase + dayOffset;
+          segArr = cand.segArrBase + dayOffset;
         }
-        dayOffset = currentDayIdx * 1440;
+      } else {
+        segDep = cand.segDepBase;
+        segArr = cand.segArrBase;
       }
-      const segDep = cand.segDepBase + dayOffset;
-      const segArr = cand.segArrBase + dayOffset;
 
       if (cand.isSameDir) {
         if (blockInfo.signalling === 'AUTO') {
@@ -375,7 +390,25 @@ export async function runSimulation({
   const checkIntervalOverlap = (reqStart, reqEnd, alloc, safetyMargin = 5) => {
     const intervals = getAbsoluteIntervals(alloc);
     for (const int of intervals) {
-      if (int.start < reqEnd && reqStart < (int.end + safetyMargin)) {
+      let aStart = int.start;
+      let aEnd = int.end;
+      
+      if (simDay === 'All' && alloc.daysBits) {
+        const baseK = Math.floor(aStart / 1440);
+        const currentDayIdx = Math.floor(reqStart / 1440);
+        aStart = (aStart - baseK * 1440) + currentDayIdx * 1440;
+        aEnd = (aEnd - baseK * 1440) + currentDayIdx * 1440;
+        
+        if (aStart - reqStart > 720) {
+          aStart -= 1440;
+          aEnd -= 1440;
+        } else if (reqStart - aEnd > 720) {
+          aStart += 1440;
+          aEnd += 1440;
+        }
+      }
+
+      if (aStart < reqEnd && reqStart < (aEnd + safetyMargin)) {
         return true;
       }
     }
