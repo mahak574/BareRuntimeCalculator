@@ -40,7 +40,20 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
 
   const [simAccelTime, setSimAccelTime] = useState('05:00');
   const [simDecelTime, setSimDecelTime] = useState('03:00');
+  const [accelHovered, setAccelHovered] = useState(false);
+  const [decelHovered, setDecelHovered] = useState(false);
   const [simBlockCorridor, setSimBlockCorridor] = useState(false);
+
+  // Quarter-minute steps: 00:15, 00:30 ... 100:00 (15-second intervals)
+  const ACCEL_DECEL_STEPS = (() => {
+    const steps = [];
+    for (let totalSec = 15; totalSec <= 100 * 60; totalSec += 15) {
+      const mm = Math.floor(totalSec / 60).toString().padStart(2, '0');
+      const ss = (totalSec % 60).toString().padStart(2, '0');
+      steps.push(`${mm}:${ss}`);
+    }
+    return steps;
+  })();
   // Direction: array of 'forward' | 'backward'
   const [simDirections, setSimDirections] = useState(['forward', 'backward']);
   // simStops: array of { code: string, halt: number (mins) }
@@ -1225,7 +1238,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Dep From <span style={{ color: '#ef4444' }}>*</span>
+                    Departure From <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
@@ -1236,7 +1249,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Dep Upto <span style={{ color: '#ef4444' }}>*</span>
+                    Departure Upto <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
@@ -1247,7 +1260,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Completion
+                    Journey Limit(HH:MM)
                   </label>
                   <input
                     type="time"
@@ -1287,25 +1300,71 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     Accel (mm:ss)
                   </label>
-                  <input
-                    type="text"
-                    placeholder="00:00"
-                    value={simAccelTime}
-                    onChange={e => setSimAccelTime(formatMMSS(e.target.value, simAccelTime))}
-                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
-                  />
+                  <div
+                    onMouseEnter={() => setAccelHovered(true)}
+                    onMouseLeave={() => setAccelHovered(false)}
+                    style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff', cursor: 'default' }}
+                  >
+                    <span style={{ flex: 1, padding: '6px 8px', fontSize: '13px', color: '#334155', textAlign: 'center', userSelect: 'none', minWidth: 0 }}>
+                      {simAccelTime || '00:00'}
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', borderLeft: accelHovered ? '1px solid #cbd5e1' : '1px solid transparent', visibility: accelHovered ? 'visible' : 'hidden', width: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idx = ACCEL_DECEL_STEPS.indexOf(simAccelTime);
+                          if (idx < ACCEL_DECEL_STEPS.length - 1) setSimAccelTime(ACCEL_DECEL_STEPS[idx + 1]);
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '9px', color: '#64748b', lineHeight: 1, borderBottom: '1px solid #e2e8f0' }}
+                        title="Increase"
+                      >▲</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idx = ACCEL_DECEL_STEPS.indexOf(simAccelTime);
+                          if (idx > 0) setSimAccelTime(ACCEL_DECEL_STEPS[idx - 1]);
+                          else setSimAccelTime('00:00');
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '9px', color: '#64748b', lineHeight: 1 }}
+                        title="Decrease"
+                      >▼</button>
+                    </div>
+                  </div>
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     Decel (mm:ss)
                   </label>
-                  <input
-                    type="text"
-                    placeholder="00:00"
-                    value={simDecelTime}
-                    onChange={e => setSimDecelTime(formatMMSS(e.target.value, simDecelTime))}
-                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box' }}
-                  />
+                  <div
+                    onMouseEnter={() => setDecelHovered(true)}
+                    onMouseLeave={() => setDecelHovered(false)}
+                    style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff', cursor: 'default' }}
+                  >
+                    <span style={{ flex: 1, padding: '6px 8px', fontSize: '13px', color: '#334155', textAlign: 'center', userSelect: 'none', minWidth: 0 }}>
+                      {simDecelTime || '00:00'}
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', borderLeft: decelHovered ? '1px solid #cbd5e1' : '1px solid transparent', visibility: decelHovered ? 'visible' : 'hidden', width: '20px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idx = ACCEL_DECEL_STEPS.indexOf(simDecelTime);
+                          if (idx < ACCEL_DECEL_STEPS.length - 1) setSimDecelTime(ACCEL_DECEL_STEPS[idx + 1]);
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '9px', color: '#64748b', lineHeight: 1, borderBottom: '1px solid #e2e8f0' }}
+                        title="Increase"
+                      >▲</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const idx = ACCEL_DECEL_STEPS.indexOf(simDecelTime);
+                          if (idx > 0) setSimDecelTime(ACCEL_DECEL_STEPS[idx - 1]);
+                          else setSimDecelTime('00:00');
+                        }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px 4px', fontSize: '9px', color: '#64748b', lineHeight: 1 }}
+                        title="Decrease"
+                      >▼</button>
+                    </div>
+                  </div>
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op(min)</label>
