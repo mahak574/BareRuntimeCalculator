@@ -416,6 +416,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               const midY = (trk.y1 + trk.y2) / 2;
               const isBlue = trk.trackColor === 'blue';
               const isOrange = trk.trackColor === 'orange';
+              if (!isBlue && !isOrange) return null;
               const arrowColor = isBlue ? '#2563ebff' : (isOrange ? '#ea580c' : '#cbd5e1');
 
               let arrowAngle = trk.angle;
@@ -428,7 +429,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 <g key={`mlt-${i}`}>
                   {trkIsAbsolute ? (
                     <>
-                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
+                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#b0bec5'} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
                     </>
                   ) : (
                     <>
@@ -446,52 +447,55 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               )
             })}
 
-            {renderData.stationLines.map((sl, i) => (
-              <g
-                key={`sl-${i}`}
-                pointerEvents="all"
-                onMouseEnter={(e) => showTooltip(e, 'station', sl)}
-                onMouseMove={(e) => {
-                  updateTooltipPosition(e.clientX, e.clientY);
-                  if (hoverTooltipTimeoutRef.current) clearTimeout(hoverTooltipTimeoutRef.current);
-                  hoverTooltipTimeoutRef.current = setTimeout(() => setHoverTooltip(prev => ({ ...prev, visible: false })), 5000);
-                }}
-                onMouseLeave={hideTooltip}
-                onClick={(e) => handleLineClick(e, 'station', sl)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setContextMenu({
-                    visible: true,
-                    x: e.clientX,
-                    y: e.clientY,
-                    type: 'station-line',
-                    lineData: sl,
-                    data: { code: sl.stnCode }
-                  });
-                }}
-                style={{ cursor: connectingState ? 'crosshair' : 'pointer' }}
-              >
-                {connectingState?.lineData === sl && (
-                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke="#fcd34d" strokeWidth="28" opacity="0.8" />
-                )}
-                {isBlockAbsolute(sl.adjacentBsCode) ? (
-                  // Absolute signalling: filled rect, no stroke border, no shadow
-                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
-                ) : (
-                  // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
-                  <>
-                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
-                    <line x1={sl.x1} y1={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                    <line x1={sl.x1} y1={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                  </>
-                )}
-              </g>
-            ))}
+            {renderData.stationLines.map((sl, i) => {
+              return (
+                <g
+                  key={`sl-${i}`}
+                  pointerEvents="all"
+                  onMouseEnter={(e) => showTooltip(e, 'station', sl)}
+                  onMouseMove={(e) => {
+                    updateTooltipPosition(e.clientX, e.clientY);
+                    if (hoverTooltipTimeoutRef.current) clearTimeout(hoverTooltipTimeoutRef.current);
+                    hoverTooltipTimeoutRef.current = setTimeout(() => setHoverTooltip(prev => ({ ...prev, visible: false })), 5000);
+                  }}
+                  onMouseLeave={hideTooltip}
+                  onClick={(e) => handleLineClick(e, 'station', sl)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setContextMenu({
+                      visible: true,
+                      x: e.clientX,
+                      y: e.clientY,
+                      type: 'station-line',
+                      lineData: sl,
+                      data: { code: sl.stnCode }
+                    });
+                  }}
+                  style={{ cursor: connectingState ? 'crosshair' : 'pointer' }}
+                >
+                  {connectingState?.lineData === sl && (
+                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke="#fcd34d" strokeWidth="28" opacity="0.8" />
+                  )}
+                  {isBlockAbsolute(sl.adjacentBsCode) ? (
+                    // Absolute signalling: filled rect, no stroke border, no shadow
+                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
+                  ) : (
+                    // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
+                    <>
+                      <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
+                      <line x1={sl.x1} y1={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                      <line x1={sl.x1} y1={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
+                    </>
+                  )}
+                </g>
+              );
+            })}
 
             {renderData.blockLines.map((bl, i) => {
+              if (bl.trackColor !== 'blue' && bl.trackColor !== 'orange') return null;
               const isAutoSignalling = String(layout?.blockSections?.[bl.bsCode]?.lines?.[0]?.MAVSIGNALLING || '').trim().toUpperCase() === 'AUTO';
-              const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#475569';
+              const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#b0bec5';
               const solidFillLight = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#cbd5e1';
               return (
                 <g
@@ -1382,21 +1386,11 @@ function generateRenderData(layout) {
   const lineColorMap = buildMainLineDirections();
 
   const getLineColor = (line, nodeCode, nodeType, seqNum) => {
-    let color = 'default';
-    if (nodeType === 'station') {
-      const cat = String(line.MACLINECATEGORY || '').trim().toUpperCase();
-      if (cat !== 'M' && cat !== 'MAIN') return 'default';
-      color = lineColorMap.station[nodeCode]?.[seqNum] || 'default';
-    } else {
-      color = lineColorMap.block[nodeCode]?.[seqNum] || 'default';
-    }
-
-
-    return color;
+    return 'default';
   };
 
   let currentX = 80;
-  const blockWidth = 160;
+  const blockWidth = 400;
   const stationWidth = 140;
   const gap = 120;
 
@@ -1660,6 +1654,19 @@ function generateRenderData(layout) {
     if (!bsLine && !isNaN(bsLineNum)) bsLine = lineEnds[`${bsCode}-SEQ-${bsLineNum}`];
     if (!bsLine) bsLine = lineEnds[`${bsCode}-LINE-${String(conn.MANBSLINENUMB).trim()}`];
 
+    // OVERRIDE: KOTA Station data anomalies
+    // The data connects KOTA's main lines to incorrect line numbers (like Line 5).
+    // We enforce that the corridor main lines (Block Section Seq 1 & 2) connect 
+    // to KOTA Line 2 (Seq 2) and Line 3 (Seq 3) respectively, ensuring continuity.
+    const stnCodeNorm = String(conn.MAVSTTNCODE || '').trim().toUpperCase();
+    if (stnCodeNorm === 'KOTA' && bsLine) {
+      if (bsLine.lineIndex === 0) {
+        stnLine = lineEnds['KOTA-LINE-2'] || lineEnds['KOTA-SEQ-2'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 1);
+      } else if (bsLine.lineIndex === 1) {
+        stnLine = lineEnds['KOTA-LINE-3'] || lineEnds['KOTA-SEQ-3'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 2);
+      }
+    }
+
     if (stnLine && bsLine) {
       visualEdges.push({ leA: stnLine, leB: bsLine });
       let startX, startY = stnLine.y;
@@ -1749,43 +1756,47 @@ function generateRenderData(layout) {
       const stnL = stnLine.label;
       const bsL = bsLine.label;
 
-        const isRedundantMainLine = adjacentStnIsDClass && isMainLineConnection;
+      const isRedundantMainLine = adjacentStnIsDClass && isMainLineConnection;
 
-        let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
-        if (isBidirectional || isMSync) {
-          connectionColor = '#10b981'; // Green for sync
-        }
+      let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
+      if (isBidirectional || isMSync) {
+        connectionColor = '#10b981'; // Green for sync
+      }
 
-        data.connections.push({
-          rawConn: conn,
-          path,
-          startX, startY, endX, endY,
-          color: connectionColor,
-          isLeftToRight,
-          isBidirectional: isBidirectional || isMSync,
-          isMainLineConnection,
-          isRedundantMainLine,
-          isDClassConnection: adjacentStnIsDClass,
-          label: (isBidirectional || isMSync) ? `${stnLine.label} ↔ ${bsLine.label}` : isSend ? `${stnLine.label} → ${bsLine.label}` : `${stnLine.label} ← ${bsLine.label}`
-        });
+      data.connections.push({
+        rawConn: conn,
+        path,
+        startX, startY, endX, endY,
+        color: connectionColor,
+        isLeftToRight,
+        isBidirectional: isBidirectional || isMSync,
+        isMainLineConnection,
+        isRedundantMainLine,
+        isDClassConnection: adjacentStnIsDClass,
+        label: (isBidirectional || isMSync) ? `${stnLine.label} ↔ ${bsLine.label}` : isSend ? `${stnLine.label} → ${bsLine.label}` : `${stnLine.label} ← ${bsLine.label}`
+      });
 
-        // For MAIN line connections, immediately propagate the connection's directional
-        // color back to the station MAIN line. The connection color (blue/orange from
-        // isLeftToRight) is the authoritative source — it encodes the physical direction
-        // through the corridor. This overrides any fallback or flood-fill assignment.
-        // Only write if currently uncolored ('default') — first connection wins.
-        if (isMainLineConnection && !isBidirectional && !isMSync && stnLine.trackColor === 'default') {
-          const correctedColor = isLeftToRight ? 'blue' : 'orange';
-          // Update all lineEnds keys that point to this station line
-          Object.values(lineEnds).forEach(le => {
-            if (le.ref === stnLine.ref) {
-              le.trackColor = correctedColor;
-            }
-          });
-          // Update the lineEnd for the station line itself
+      // For MAIN line connections, immediately propagate the connection's directional
+      // color back to both the station MAIN line and the block section line. The connection 
+      // color (blue/orange from isLeftToRight) is the authoritative source — it encodes 
+      // the physical direction of traffic through the corridor.
+      if (isMainLineConnection && !isBidirectional && !isMSync) {
+        const correctedColor = isLeftToRight ? 'blue' : 'orange';
+
+        // Propagate to station line
+        if (stnLine.trackColor === 'default') {
+          Object.values(lineEnds).forEach(le => { if (le.ref === stnLine.ref) le.trackColor = correctedColor; });
           stnLine.trackColor = correctedColor;
           if (stnLine.ref) stnLine.ref.trackColor = correctedColor;
         }
+
+        // Propagate to block section line
+        if (bsLine.trackColor === 'default') {
+          Object.values(lineEnds).forEach(le => { if (le.ref === bsLine.ref) le.trackColor = correctedColor; });
+          bsLine.trackColor = correctedColor;
+          if (bsLine.ref) bsLine.ref.trackColor = correctedColor;
+        }
+      }
     }
   });
 
@@ -2001,7 +2012,7 @@ function generateRenderData(layout) {
         rawConn: {},
         path,
         startX, startY, endX, endY,
-        color: leA.trackColor === 'blue' ? '#2563eb' : (leA.trackColor === 'orange' ? '#ea580c' : '#64748b'),
+        color: leA.trackColor === 'blue' ? '#2563eb' : (leA.trackColor === 'orange' ? '#ea580c' : '#b0bec5'),
         isLeftToRight: startX < endX,
         isBidirectional: false,
         isMainLineConnection: false,
@@ -2033,21 +2044,54 @@ function generateRenderData(layout) {
     });
   }
 
-  // Hard fallback: Block sections must ALWAYS be orange or blue, never gray
+  // Hard fallback: Block sections that still have 'default' color get their color from the
+  // closest-Y adjacent station main line. This is geometrically reliable — the same physical
+  // main line runs at the same Y-coordinate across stations and block sections throughout the
+  // corridor. lineIndex is kept only as absolute last resort if no adjacent station colors exist.
   data.blockLines.forEach(bl => {
-    if (bl.trackColor === 'default') {
-      const fallback = parseFloat(bl.seq) <= 1 ? 'blue' : 'orange';
-      bl.trackColor = fallback;
-      Object.values(lineEnds).forEach(le => {
-        if (le.ref === bl) le.trackColor = fallback;
-      });
+    if (bl.trackColor !== 'default') return;
+
+    // Find adjacent station nodes in layout sequence
+    const blNodeIdx = layout.sequence.findIndex(n => n.type === 'block' && n.code === bl.bsCode);
+    const candidates = [];
+
+    // Collect colored station lines from the nearest station on each side
+    for (let k = blNodeIdx - 1; k >= 0; k--) {
+      if (layout.sequence[k].type === 'station') {
+        data.stationLines
+          .filter(sl => sl.stnCode === layout.sequence[k].code && (sl.trackColor === 'blue' || sl.trackColor === 'orange'))
+          .forEach(sl => candidates.push(sl));
+        break;
+      }
     }
+    for (let k = blNodeIdx + 1; k < layout.sequence.length; k++) {
+      if (layout.sequence[k].type === 'station') {
+        data.stationLines
+          .filter(sl => sl.stnCode === layout.sequence[k].code && (sl.trackColor === 'blue' || sl.trackColor === 'orange'))
+          .forEach(sl => candidates.push(sl));
+        break;
+      }
+    }
+
+    // Pick the station line whose Y is closest to this block line's Y
+    let bestMatch = null;
+    let bestDist = Infinity;
+    for (const sl of candidates) {
+      const dist = Math.abs(sl.y - bl.y);
+      if (dist < bestDist) { bestDist = dist; bestMatch = sl; }
+    }
+
+    const fallback = bestMatch ? bestMatch.trackColor : (bl.lineIndex === 0 ? 'blue' : 'orange');
+    bl.trackColor = fallback;
+    Object.values(lineEnds).forEach(le => {
+      if (le.ref === bl) le.trackColor = fallback;
+    });
   });
 
   // Hard fallback: Station MAIN lines must ALWAYS be orange or blue, never gray
   data.stationLines.forEach(sl => {
     if (sl.isPhysicallyConnectedMain && sl.trackColor === 'default') {
-      const fallback = parseFloat(sl.seq) <= 1 ? 'blue' : 'orange';
+      const fallback = sl.lineIndex === 0 ? 'blue' : 'orange';
       sl.trackColor = fallback;
       Object.values(lineEnds).forEach(le => {
         if (le.ref === sl) le.trackColor = fallback;

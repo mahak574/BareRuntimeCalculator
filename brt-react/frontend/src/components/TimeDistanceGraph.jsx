@@ -2269,7 +2269,7 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
               <g key={`y-${stn.code}`}>
                 <line
                   x1={marginLeft} y1={stn.y} x2={containerWidth - marginRight} y2={stn.y}
-                  stroke="#e7e9f2" strokeWidth="1" strokeDasharray="2,2"
+                  stroke="#c0c0d1ff" strokeWidth="1" strokeDasharray="2,2"
                 />
                 {/* Cumulative Distance */}
                 <text x={10} y={stn.y + 3} fill="#6b7189" fontSize="9" textAnchor="start" fontWeight="normal">
