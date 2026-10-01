@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { runSimulation as runSimulationExternal } from '../simulation/freightScheduler';
+import SimWorker from '../simulation/simulationWorker.js?worker';
 import { calculateGoodsSpeedConfig } from '../utils/goodsSpeedCalculator';
 
 const TimeInput = ({ value, onChange, placeholder }) => {
@@ -183,6 +183,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   const handleCancelSimulation = () => {
     if (isSimulating) {
       abortSimRef.current = true;
+      // Terminate the worker if running
+      if (abortSimRef._worker) {
+        abortSimRef._worker.terminate();
+        abortSimRef._worker = null;
+      }
       setIsSimulating(false);
     }
     setShowSimulationModal(false);
@@ -590,42 +595,60 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
       return;
     }
     setIsSimulating(true);
-    await new Promise(resolve => setTimeout(resolve, 10));
 
     try {
-      const resultPaths = await runSimulationExternal({
-        layout,
-        layoutStations: graphData.layoutStations,
-        canonicalTrains: graphData.canonicalTrains,
-        simSource,
-        simDest,
-        scheduleData,
-        stationLines,
-        simDay,
-        simTimeFrom,
-        simTimeUpto,
-        simCompletionTime,
-        simHeadway,
-        simMaxDetention,
+      const worker = new SimWorker();
 
-        simSpeed,
-        goodsSpeedConfig,
-        goodsSpeedOverrides,
-        simTrainLoadType,
-        simAccelTime,
-        simDecelTime,
-        simBlockCorridor,
-        simBlockOperatingTime: globalBlockOpTime,
-        simStops,
-        simDirections,
-        abortSimRef,
-        simulatedPaths,
-        debug: false
+      const resultPaths = await new Promise((resolve, reject) => {
+        worker.onmessage = (e) => {
+          if (e.data.type === 'DONE') {
+            resolve(e.data.result);
+          } else if (e.data.type === 'ERROR') {
+            reject(new Error(e.data.message));
+          }
+          worker.terminate();
+        };
+        worker.onerror = (err) => {
+          reject(err);
+          worker.terminate();
+        };
+
+        // Store worker ref so abort button can signal it
+        abortSimRef.current = false;
+        abortSimRef._worker = worker;
+
+        worker.postMessage({
+          layout,
+          layoutStations: graphData.layoutStations,
+          canonicalTrains: graphData.canonicalTrains,
+          simSource,
+          simDest,
+          scheduleData,
+          stationLines,
+          simDay,
+          simTimeFrom,
+          simTimeUpto,
+          simCompletionTime,
+          simHeadway,
+          simMaxDetention,
+          simSpeed,
+          goodsSpeedConfig,
+          goodsSpeedOverrides,
+          simTrainLoadType,
+          simAccelTime,
+          simDecelTime,
+          simBlockCorridor,
+          simBlockOperatingTime: globalBlockOpTime,
+          simStops,
+          simDirections,
+          simulatedPaths,
+          debug: false
+        });
       });
 
       if (abortSimRef.current) return;
 
-      const newPaths = resultPaths.paths || resultPaths;
+      const newPaths = resultPaths?.paths || resultPaths;
 
       if (newPaths && newPaths.length > 0) {
         setSimulatedPaths(prev => [...prev, ...newPaths]);
@@ -1455,16 +1478,44 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   </div>
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op(min)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.25"
-                    placeholder="0"
-                    value={globalBlockOpTime}
-                    onChange={e => setGlobalBlockOpTime(e.target.value === '' ? '' : Number(e.target.value))}
-                    style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: '#fff' }}
-                  />
+                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Block Op (mm:ss)</label>
+                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden', backgroundColor: '#fff' }}>
+                    <input
+                      type="text"
+                      placeholder="05:00"
+                      value={globalBlockOpTime}
+                      onChange={e => setGlobalBlockOpTime(e.target.value)}
+                      style={{ flex: 1, minWidth: 0, padding: '6px 8px', border: 'none', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: 'transparent' }}
+                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', width: '20px', borderLeft: '1px solid #cbd5e1', alignSelf: 'stretch' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const t = String(globalBlockOpTime || '00:00');
+                          let m=0, s=0;
+                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0])||0; s = parseInt(p[1])||0; }
+                          else { m = parseInt(t)||0; }
+                          let sec = Math.max(0, m*60 + s + 15);
+                          setGlobalBlockOpTime(Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0'));
+                        }}
+                        style={{ flex: 1, background: '#f8fafc', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', borderBottom: '1px solid #e2e8f0', padding: 0 }}
+                        title="Increase"
+                      >▲</button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const t = String(globalBlockOpTime || '00:00');
+                          let m=0, s=0;
+                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0])||0; s = parseInt(p[1])||0; }
+                          else { m = parseInt(t)||0; }
+                          let sec = Math.max(0, m*60 + s - 15);
+                          setGlobalBlockOpTime(Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0'));
+                        }}
+                        style={{ flex: 1, background: '#f8fafc', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', padding: 0 }}
+                        title="Decrease"
+                      >▼</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 

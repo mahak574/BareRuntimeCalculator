@@ -477,17 +477,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   {connectingState?.lineData === sl && (
                     <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke="#fcd34d" strokeWidth="28" opacity="0.8" />
                   )}
-                  {isBlockAbsolute(sl.adjacentBsCode) ? (
-                    // Absolute signalling: filled rect, no stroke border, no shadow
-                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#f97316' : sl.trackColor === 'blue' ? '#3b82f6' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="0.85" />
-                  ) : (
-                    // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
-                    <>
-                      <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="0.85" />
-                      <line x1={sl.x1} y1={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                      <line x1={sl.x1} y1={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
-                    </>
-                  )}
+                  <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#f97316' : sl.trackColor === 'blue' ? '#3b82f6' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="0.85" />
                 </g>
               );
             })}
@@ -1037,7 +1027,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
-                  }}>{upName}</div>
+                  }}>Up</div>
                   <div style={{ padding: '6px 16px', cursor: 'pointer' }} className="ctx-menu-hover" onClick={() => {
                     const name = window.prompt("Enter the name for the new station line:");
                     if (name) {
@@ -1051,7 +1041,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       }
                     }
                     setContextMenu({ ...contextMenu, visible: false });
-                  }}>{downName}</div>
+                  }}>Down</div>
                 </div>
               </div>
 
@@ -1344,7 +1334,6 @@ function generateRenderData(layout) {
         const seq = parseFloat(ml.MANSEQNUMB);
         if (!dirMap.station[firstStn.code]?.[seq]) {
           const color = idx === 0 ? 'blue' : 'orange';
-          console.log(`[Diagnostic] FALLBACK SEED for first station: ${firstStn.code} line ${seq} => ${color}`);
           if (!dirMap.station[firstStn.code]) dirMap.station[firstStn.code] = {};
           dirMap.station[firstStn.code][seq] = color;
         }
@@ -1369,12 +1358,10 @@ function generateRenderData(layout) {
         if (colorA && !colorB) {
           if (!mapB[codeB]) mapB[codeB] = {};
           mapB[codeB][seqB] = colorA;
-          console.log(`[Diagnostic] PROPAGATE: ${idA} (${colorA}) -> ${idB}`);
           changed = true;
         } else if (colorB && !colorA) {
           if (!mapA[codeA]) mapA[codeA] = {};
           mapA[codeA][seqA] = colorB;
-          console.log(`[Diagnostic] PROPAGATE: ${idB} (${colorB}) -> ${idA}`);
           changed = true;
         }
       });
@@ -1433,7 +1420,9 @@ function generateRenderData(layout) {
             });
           }
         });
-        if (!anchorLine) anchorLine = mLines[0];
+        if (!anchorLine) {
+          anchorLine = mLines.find(l => parseFloat(l.MANSEQNUMB) >= 1) || mLines[0];
+        }
         mainLineIndex = nodeLines.findIndex(l => parseFloat(l.MANSEQNUMB) === parseFloat(anchorLine.MANSEQNUMB));
       }
       if (mainLineIndex === -1) {
@@ -1840,14 +1829,51 @@ function generateRenderData(layout) {
     const linesA = getLines(node).sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
     const linesB = getLines(nextNode).sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
 
-    const maxLen = Math.max(linesA.length, linesB.length);
-    for (let j = 0; j < maxLen; j++) {
-      const la = linesA[j];
-      const lb = linesB[j];
-      if (!la || !lb) continue;
+    const pairs = [];
+    const usedA = new Set();
+    const usedB = new Set();
 
-      const leA = lineEnds[`${node.code}-SEQ-${parseFloat(la.MANSEQNUMB)}`];
-      const leB = lineEnds[`${nextNode.code}-SEQ-${parseFloat(lb.MANSEQNUMB)}`];
+    // 1. Explicit pairing from layout.connections (via visualEdges)
+    if ((node.type === 'station' && nextNode.type === 'block') || (node.type === 'block' && nextNode.type === 'station')) {
+      for (let idxA = 0; idxA < linesA.length; idxA++) {
+        for (let idxB = 0; idxB < linesB.length; idxB++) {
+          const la = linesA[idxA];
+          const lb = linesB[idxB];
+          const leA = lineEnds[`${node.code}-SEQ-${parseFloat(la.MANSEQNUMB)}`];
+          const leB = lineEnds[`${nextNode.code}-SEQ-${parseFloat(lb.MANSEQNUMB)}`];
+          
+          if (leA && leB && visualEdges.some(e => (e.leA.ref === leA.ref && e.leB.ref === leB.ref) || (e.leA.ref === leB.ref && e.leB.ref === leA.ref))) {
+            pairs.push({ la, lb, leA, leB });
+            usedA.add(idxA);
+            usedB.add(idxB);
+          }
+        }
+      }
+    }
+
+    // 2. Exact Y-coordinate match for unpaired lines (crucial for D-class stations)
+    // The Y coordinate inherently represents their logical alignment anchored around mainLineIndex.
+    for (let idxA = 0; idxA < linesA.length; idxA++) {
+      if (usedA.has(idxA)) continue;
+      for (let idxB = 0; idxB < linesB.length; idxB++) {
+        if (usedB.has(idxB)) continue;
+        const la = linesA[idxA];
+        const lb = linesB[idxB];
+        if (la.y === lb.y) {
+          const leA = lineEnds[`${node.code}-SEQ-${parseFloat(la.MANSEQNUMB)}`];
+          const leB = lineEnds[`${nextNode.code}-SEQ-${parseFloat(lb.MANSEQNUMB)}`];
+          pairs.push({ la, lb, leA, leB });
+          usedA.add(idxA);
+          usedB.add(idxB);
+          break;
+        }
+      }
+    }
+
+    // 3. (Removed sequential fallback) - If a line has no explicit connection and no horizontal counterpart, it remains unconnected.
+
+    for (const { la, lb, leA, leB } of pairs) {
+      if (!leA || !leB) continue;
 
       if (leA && leB) {
         let startX, endX, startY = leA.y, endY = leB.y;
@@ -1916,24 +1942,25 @@ function generateRenderData(layout) {
 
       if (prevStnNode) {
         const prevStnLines = getMainLinesForNode(prevStnNode.code, 'station').sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
-        const maxLen = Math.max(dStnLines.length, prevStnLines.length);
-        for (let j = 0; j < maxLen; j++) {
-          const dl = dStnLines[j];
-          const pl = prevStnLines[j];
-          if (!dl || !pl) continue;
-          const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
-          const lePKey = `${prevStnNode.code}-SEQ-${parseFloat(pl.MANSEQNUMB)}`;
-          const leD = lineEnds[leDKey];
-          const leP = lineEnds[lePKey];
-          if (leD && leP) {
-            visualEdges.push({ leA: leP, leB: leD });
-            data.mainLineTracks.push({
-              x1: leP.rightX, y1: leP.y, x2: leD.leftX, y2: leD.y,
-              angle: Math.atan2(leD.y - leP.y, leD.leftX - leP.rightX),
-              trackColor: leP.trackColor || 'default',
-              bsCode: prevBsCode,
-              le1: leP, le2: leD
-            });
+        for (let idxA = 0; idxA < dStnLines.length; idxA++) {
+          for (let idxB = 0; idxB < prevStnLines.length; idxB++) {
+            const dl = dStnLines[idxA];
+            const pl = prevStnLines[idxB];
+            if (!dl || !pl || dl.y !== pl.y) continue;
+            const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
+            const lePKey = `${prevStnNode.code}-SEQ-${parseFloat(pl.MANSEQNUMB)}`;
+            const leD = lineEnds[leDKey];
+            const leP = lineEnds[lePKey];
+            if (leD && leP) {
+              visualEdges.push({ leA: leP, leB: leD });
+              data.mainLineTracks.push({
+                x1: leP.rightX, y1: leP.y, x2: leD.leftX, y2: leD.y,
+                angle: Math.atan2(leD.y - leP.y, leD.leftX - leP.rightX),
+                trackColor: leP.trackColor || 'default',
+                bsCode: prevBsCode,
+                le1: leP, le2: leD
+              });
+            }
           }
         }
       }
@@ -1948,24 +1975,25 @@ function generateRenderData(layout) {
 
       if (nextStnNode && layout.stations[nextStnNode.code].macclassflag !== 'D') {
         const nextStnLines = getMainLinesForNode(nextStnNode.code, 'station').sort((a, b) => parseFloat(a.MANSEQNUMB) - parseFloat(b.MANSEQNUMB));
-        const maxLen = Math.max(dStnLines.length, nextStnLines.length);
-        for (let j = 0; j < maxLen; j++) {
-          const dl = dStnLines[j];
-          const nl = nextStnLines[j];
-          if (!dl || !nl) continue;
-          const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
-          const leNKey = `${nextStnNode.code}-SEQ-${parseFloat(nl.MANSEQNUMB)}`;
-          const leD = lineEnds[leDKey];
-          const leN = lineEnds[leNKey];
-          if (leD && leN) {
-            visualEdges.push({ leA: leD, leB: leN });
-            data.mainLineTracks.push({
-              x1: leD.rightX, y1: leD.y, x2: leN.leftX, y2: leN.y,
-              angle: Math.atan2(leN.y - leD.y, leN.leftX - leD.rightX),
-              trackColor: leD.trackColor || 'default',
-              bsCode: nextBsCode,
-              le1: leD, le2: leN
-            });
+        for (let idxA = 0; idxA < dStnLines.length; idxA++) {
+          for (let idxB = 0; idxB < nextStnLines.length; idxB++) {
+            const dl = dStnLines[idxA];
+            const nl = nextStnLines[idxB];
+            if (!dl || !nl || dl.y !== nl.y) continue;
+            const leDKey = `${node.code}-SEQ-${parseFloat(dl.MANSEQNUMB)}`;
+            const leNKey = `${nextStnNode.code}-SEQ-${parseFloat(nl.MANSEQNUMB)}`;
+            const leD = lineEnds[leDKey];
+            const leN = lineEnds[leNKey];
+            if (leD && leN) {
+              visualEdges.push({ leA: leD, leB: leN });
+              data.mainLineTracks.push({
+                x1: leD.rightX, y1: leD.y, x2: leN.leftX, y2: leN.y,
+                angle: Math.atan2(leN.y - leD.y, leN.leftX - leD.rightX),
+                trackColor: leD.trackColor || 'default',
+                bsCode: nextBsCode,
+                le1: leD, le2: leN
+              });
+            }
           }
         }
       }

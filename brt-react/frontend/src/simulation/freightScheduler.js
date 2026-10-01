@@ -98,7 +98,7 @@ export async function runSimulation({
   };
   const accelPenaltyMins = simAccelTime ? Math.max(0, parseTimeInput(simAccelTime)) : 0;
   const decelPenaltyMins = simDecelTime ? Math.max(0, parseTimeInput(simDecelTime)) : 0;
-  const blockOpTime = simBlockOperatingTime ? parseFloat(simBlockOperatingTime) : 0;
+  const blockOpTime = simBlockOperatingTime ? parseTimeInput(simBlockOperatingTime) : 0;
   const STATION_SAFETY_MARGIN = 5;
 
   const simStopsMap = new Map(simStops.map(s => [s.code, s.halt]));
@@ -156,63 +156,114 @@ export async function runSimulation({
     return o >= Math.min(oA, oB) && o <= Math.max(oA, oB);
   };
 
+  // Pre-index: stationCode -> [{train, stopIdx}] for fast buildBlockInfo lookup
+  const stationStopIndex = new Map();
+  const fixedTrainsBase = [...canonicalTrains, ...simulatedPaths];
+  const canonicalSet = new Set(canonicalTrains);
+  for (const train of fixedTrainsBase) {
+    if (!train.stops || train.stops.length < 2) continue;
+    for (let i = 0; i < train.stops.length; i++) {
+      const code = train.stops[i].station;
+      if (!stationStopIndex.has(code)) stationStopIndex.set(code, []);
+      stationStopIndex.get(code).push({ train, stopIdx: i });
+    }
+  }
+
   const buildBlockInfo = (stn1Code, stn2Code, isDoubleLine, signalling = 'AB') => {
     const o1 = stationOrderMap[stn1Code];
     const o2 = stationOrderMap[stn2Code];
     const simFwd = o2 > o1;
     const matchedCandidates = [];
-    const fixedTrainsBase = [...canonicalTrains, ...simulatedPaths];
-    const canonicalSet = new Set(canonicalTrains);
-    for (const train of fixedTrainsBase) {
-      if (!train.stops || train.stops.length < 2) continue;
+
+    // Use pre-index: find trains that pass through stn1Code, then check if next/prev stop is stn2Code
+    const stn1Entries = stationStopIndex.get(stn1Code) || [];
+    for (const { train, stopIdx } of stn1Entries) {
       const isSimulated = !canonicalSet.has(train);
-      for (let i = 1; i < train.stops.length; i++) {
-        const pStp = train.stops[i - 1];
-        const cStp = train.stops[i];
-        let segCoversBlock, isSameDir, isOppDir;
-        if (isSimulated) {
-          const same = pStp.station === stn1Code && cStp.station === stn2Code;
-          const opp = pStp.station === stn2Code && cStp.station === stn1Code;
-          segCoversBlock = same || opp;
-          isSameDir = same;
-          isOppDir = opp;
-        } else {
-          const bothIn = stationBetween(stn1Code, pStp.station, cStp.station) && stationBetween(stn2Code, pStp.station, cStp.station);
-          if (!bothIn) continue;
-          const oA = stationOrderMap[pStp.station];
-          const oB = stationOrderMap[cStp.station];
-          const realFwd = oB > oA;
-          isSameDir = realFwd === simFwd;
-          isOppDir = !isSameDir;
-          segCoversBlock = true;
+      if (isSimulated) {
+        // Check stn1 -> stn2
+        if (stopIdx + 1 < train.stops.length && train.stops[stopIdx + 1].station === stn2Code) {
+          if (!isDoubleLine) { // both dirs
+            const pStp = train.stops[stopIdx];
+            const cStp = train.stops[stopIdx + 1];
+            matchedCandidates.push({
+              isSimulated: true,
+              segDepBase: pStp.absDepMins !== undefined ? pStp.absDepMins : (pStp.depTime * 60),
+              segArrBase: cStp.absArrMins !== undefined ? cStp.absArrMins : (cStp.arrTime * 60),
+              isSameDir: true,
+              daysBits: null
+            });
+          } else {
+            const pStp = train.stops[stopIdx];
+            const cStp = train.stops[stopIdx + 1];
+            matchedCandidates.push({
+              isSimulated: true,
+              segDepBase: pStp.absDepMins !== undefined ? pStp.absDepMins : (pStp.depTime * 60),
+              segArrBase: cStp.absArrMins !== undefined ? cStp.absArrMins : (cStp.arrTime * 60),
+              isSameDir: true,
+              daysBits: null
+            });
+          }
         }
-        if (!segCoversBlock) continue;
-        if (isDoubleLine && isOppDir) continue;
-        matchedCandidates.push({
-          isSimulated,
-          segDepBase: (isSimulated && pStp.absDepMins !== undefined) ? pStp.absDepMins : (pStp.depTime * 60),
-          segArrBase: (isSimulated && cStp.absArrMins !== undefined) ? cStp.absArrMins : (cStp.arrTime * 60),
-          isSameDir,
-          daysBits: (!isSimulated && train.daysOfSrvc) ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null
-        });
-        break;
+        // Check stn2 -> stn1 (opposite direction)
+        if (!isDoubleLine && stopIdx + 1 < train.stops.length && train.stops[stopIdx].station === stn1Code) {
+          // already covered above
+        }
+      } else {
+        // canonical train: check if segment pStp->cStp covers block
+        if (stopIdx + 1 < train.stops.length) {
+          const pStp = train.stops[stopIdx];
+          const cStp = train.stops[stopIdx + 1];
+          const bothIn = stationBetween(stn1Code, pStp.station, cStp.station) && stationBetween(stn2Code, pStp.station, cStp.station);
+          if (bothIn) {
+            const oA = stationOrderMap[pStp.station];
+            const oB = stationOrderMap[cStp.station];
+            const realFwd = oB > oA;
+            const isSameDir = realFwd === simFwd;
+            const isOppDir = !isSameDir;
+            if (isDoubleLine && isOppDir) continue;
+            matchedCandidates.push({
+              isSimulated: false,
+              segDepBase: pStp.depTime * 60,
+              segArrBase: cStp.arrTime * 60,
+              isSameDir,
+              daysBits: train.daysOfSrvc ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null
+            });
+          }
+        }
       }
     }
+
+    // Also check trains passing through stn2Code in opposite direction (stn2->stn1 for simulated)
+    if (!isDoubleLine) {
+      const stn2Entries = stationStopIndex.get(stn2Code) || [];
+      for (const { train, stopIdx } of stn2Entries) {
+        const isSimulated = !canonicalSet.has(train);
+        if (isSimulated && stopIdx + 1 < train.stops.length && train.stops[stopIdx + 1].station === stn1Code) {
+          const pStp = train.stops[stopIdx];
+          const cStp = train.stops[stopIdx + 1];
+          matchedCandidates.push({
+            isSimulated: true,
+            segDepBase: pStp.absDepMins !== undefined ? pStp.absDepMins : (pStp.depTime * 60),
+            segArrBase: cStp.absArrMins !== undefined ? cStp.absArrMins : (cStp.arrTime * 60),
+            isSameDir: false,
+            daysBits: null
+          });
+        }
+      }
+    }
+
     // stn2Candidates for conflict counting at station
     const stn2Candidates = [];
-    for (const train of fixedTrainsBase) {
-      if (!train.stops || train.stops.length === 0) continue;
+    const stn2Entries2 = stationStopIndex.get(stn2Code) || [];
+    for (const { train, stopIdx } of stn2Entries2) {
       const isSimulated = !canonicalSet.has(train);
-      for (const stop of train.stops) {
-        if (stop.station !== stn2Code) continue;
-        stn2Candidates.push({
-          isSimulated,
-          arrBase: (isSimulated && stop.absArrMins !== undefined) ? stop.absArrMins : (stop.arrTime * 60),
-          depBase: (isSimulated && stop.absDepMins !== undefined) ? stop.absDepMins : (stop.depTime * 60),
-          daysBits: (!isSimulated && train.daysOfSrvc) ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null
-        });
-        break;
-      }
+      const stop = train.stops[stopIdx];
+      stn2Candidates.push({
+        isSimulated,
+        arrBase: (isSimulated && stop.absArrMins !== undefined) ? stop.absArrMins : (stop.arrTime * 60),
+        depBase: (isSimulated && stop.absDepMins !== undefined) ? stop.absDepMins : (stop.depTime * 60),
+        daysBits: (!isSimulated && train.daysOfSrvc) ? String(train.daysOfSrvc).replace(/[^01]/g, '') : null
+      });
     }
     return {
       stn1Code,
@@ -462,12 +513,7 @@ export async function runSimulation({
       allocations.push({ lineId: assignedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: false });
       return assignedLineId;
     } else {
-      console.debug('[STATION CAPACITY VIOLATION]', {
-        station: stnCode, trainId: tId, direction: tDir,
-        requested: `${tStart}-${tEnd}`,
-        lines: compatibleLines.length,
-        isCanonical
-      });
+      // Console debug removed to stop spam
       const forcedLineId = compatibleLines.length > 0 ? compatibleLines[0].lineId : 'UNKNOWN';
       allocations.push({ lineId: forcedLineId, tId, tDir, tStart, tEnd, daysBits, overflow: true });
       return forcedLineId;
@@ -567,8 +613,8 @@ export async function runSimulation({
     while (true) {
       iter++;
       diagnostics.totalIterations++;
-      if (iter % 5000 === 0) await new Promise(r => setTimeout(r, 0));
-      if (iter > 5000000) return null;
+      if (iter % 50000 === 0) await new Promise(r => setTimeout(r, 0));
+      if (iter > 10000000) return null;
       if (i < 0) return null;
       if (i >= n - 1) {
         const path = [];
@@ -1086,7 +1132,7 @@ export async function runSimulation({
 
   while ((activeFwd && tryStartMinsFwd <= uptoMins) || (activeBwd && tryStartMinsBwd <= uptoMins)) {
     if (abort.current) break;
-    if (++iterCount % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    if (++iterCount % 50 === 0) await new Promise(r => setTimeout(r, 0));
     if (debug && (performance.now() - startTimeMs) > maxMs) {
       console.warn('Simulation time budget exceeded');
       break;
@@ -1172,12 +1218,11 @@ export async function runSimulation({
       }
     } else {
       if (result && path.length === pathStations.length - 1 && !withinCompletion) {
-        console.warn(`[SIM ABORT] Path completed but exceeded completionMins. Path end: ${currTime}. tryFwd: ${tryFwd}`);
         if (tryFwd) tryStartMinsFwd = Infinity;
         else tryStartMinsBwd = Infinity;
       } else {
         if (!result) {
-          console.warn(`[SIM ABORT] attemptPathFromTime returned null! tryStartMins: ${tryFwd ? tryStartMinsFwd : tryStartMinsBwd}, tryFwd: ${tryFwd}`);
+          // console.warn(`[SIM ABORT] attemptPathFromTime returned null! tryStartMins: ${tryFwd ? tryStartMinsFwd : tryStartMinsBwd}, tryFwd: ${tryFwd}`);
         }
         if (tryFwd) tryStartMinsFwd += hwMargin;
         else tryStartMinsBwd += hwMargin;
