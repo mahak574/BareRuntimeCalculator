@@ -1220,16 +1220,12 @@ function generateRenderData(layout) {
     if (type === 'station') {
       const stn = layout.stations[code];
       if (stn && stn.lines) {
-        if (code === 'KOTA') {
-          lines = stn.lines.filter(l => String(l.MACSTATIONLINE).trim() === '2' || String(l.MACSTATIONLINE).trim() === '3');
-        } else {
-          lines = stn.lines.filter(l => {
-            const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-            return cat === 'M' || cat === 'MAIN';
-          });
-          if (lines.length === 0) {
-            lines = stn.lines.filter(l => parseFloat(l.MANSEQNUMB) <= 2);
-          }
+        lines = stn.lines.filter(l => {
+          const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
+          return cat === 'M' || cat === 'MAIN';
+        });
+        if (lines.length === 0) {
+          lines = stn.lines.filter(l => parseFloat(l.MANSEQNUMB) <= 2);
         }
       }
     } else {
@@ -1390,7 +1386,11 @@ function generateRenderData(layout) {
   const lineColorMap = buildMainLineDirections();
 
   const getLineColor = (line, nodeCode, nodeType, seqNum) => {
-    return 'default';
+    if (nodeType === 'station') {
+      return lineColorMap.station[nodeCode]?.[seqNum] || 'default';
+    } else {
+      return lineColorMap.block[nodeCode]?.[seqNum] || 'default';
+    }
   };
 
   let currentX = 80;
@@ -1663,18 +1663,11 @@ function generateRenderData(layout) {
     // We enforce that the corridor main lines (Block Section Seq 1 & 2) connect 
     // to KOTA Line 2 (Seq 2) and Line 3 (Seq 3) respectively, ensuring continuity.
     const stnCodeNorm = String(conn.MAVSTTNCODE || '').trim().toUpperCase();
-    let forcedMainLine = false;
     if (stnCodeNorm === 'KOTA' && bsLine) {
-      let forcedStnLine = null;
       if (bsLine.lineIndex === 0) {
-        forcedStnLine = Object.values(lineEnds).find(le => le.ref && le.ref.stnCode === 'KOTA' && String(le.ref.label).trim() === '2');
+        stnLine = lineEnds['KOTA-LINE-2'] || lineEnds['KOTA-SEQ-2'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 1);
       } else if (bsLine.lineIndex === 1) {
-        forcedStnLine = Object.values(lineEnds).find(le => le.ref && le.ref.stnCode === 'KOTA' && String(le.ref.label).trim() === '3');
-      }
-      if (forcedStnLine) {
-        stnLine = forcedStnLine;
-        stnLineNum = forcedStnLine.ref.seq;
-        forcedMainLine = true;
+        stnLine = lineEnds['KOTA-LINE-3'] || lineEnds['KOTA-SEQ-3'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 2);
       }
     }
 
@@ -1700,7 +1693,7 @@ function generateRenderData(layout) {
 
       const isLeftToRight = (bsCenterX > stnCenterX && (isSend || isMSync)) || (bsCenterX < stnCenterX && !(isSend || isMSync));
 
-      const offset = (isBidirectional || isMSync) ? 0 : (isSend ? -5 : 5);
+      const offset = 0; // Removed offset to fix physical gap between station lines and block lines
       const adjStartY = startY + offset;
       const adjEndY = endY + offset;
 
@@ -1711,11 +1704,7 @@ function generateRenderData(layout) {
       const actualStnLine = layout.stations[conn.MAVSTTNCODE]?.lines.find(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
       const isMSyncType = conn.MACCONNECTNTYPE === 'M';
       const stnCat = actualStnLine ? String(actualStnLine.MACLINECATEGORY || '').trim().toUpperCase() : '';
-      let isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
-      
-      if (forcedMainLine) {
-        isMainLineConnection = true;
-      }
+      const isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
 
       const varFactor = (stnLineNum % 2 === 0) ? 1 : -1;
       const isStraight = absDy < 5;

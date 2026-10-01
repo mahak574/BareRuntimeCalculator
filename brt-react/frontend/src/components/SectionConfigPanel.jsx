@@ -36,14 +36,15 @@ const SOW_OPTIONS = [
   { label: 'Automatic Block System', value: 'AUTO' }
 ];
 
-const BLOCK_TIME_OPTIONS = [
-  { label: '3 min', value: 3 },
-  { label: '4 min', value: 4 },
-  { label: '5 min', value: 5 },
-  { label: '6 min', value: 6 },
-  { label: '7 min', value: 7 },
-  { label: '8 min', value: 8 }
-];
+const BLOCK_TIME_OPTIONS = [];
+for (let i = 1; i <= 15; i += 0.25) {
+  const min = Math.floor(i);
+  const sec = Math.round((i - min) * 60);
+  BLOCK_TIME_OPTIONS.push({
+    label: sec === 0 ? `${min} min` : `${min}m ${sec}s`,
+    value: i
+  });
+}
 
 const DEFAULT_CONFIG = {
   tracks: 2,

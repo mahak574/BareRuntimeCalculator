@@ -98,7 +98,7 @@ export async function runSimulation({
   };
   const accelPenaltyMins = simAccelTime ? Math.max(0, parseTimeInput(simAccelTime)) : 0;
   const decelPenaltyMins = simDecelTime ? Math.max(0, parseTimeInput(simDecelTime)) : 0;
-  const blockOpTime = simBlockOperatingTime ? parseInt(simBlockOperatingTime) : 0;
+  const blockOpTime = simBlockOperatingTime ? parseFloat(simBlockOperatingTime) : 0;
   const STATION_SAFETY_MARGIN = 5;
 
   const simStopsMap = new Map(simStops.map(s => [s.code, s.halt]));
@@ -276,6 +276,9 @@ export async function runSimulation({
             if (aOut <= bIn && bIn < aOut + blockOpTime) {
               autoConflict = true;
             }
+            if (bOut <= aIn && aIn < bOut + blockOpTime) {
+              autoConflict = true;
+            }
           }
         } else {
           if (Math.abs(segDep - depMins) < hwMargin) headwayViolation = true;
@@ -326,6 +329,9 @@ export async function runSimulation({
                   autoConflict = true;
                 }
                 if (aOut <= bIn && bIn < aOut + blockOpTime) {
+                  autoConflict = true;
+                }
+                if (bOut <= aIn && aIn < bOut + blockOpTime) {
                   autoConflict = true;
                 }
               }
@@ -561,8 +567,8 @@ export async function runSimulation({
     while (true) {
       iter++;
       diagnostics.totalIterations++;
-      if (iter % 300 === 0) await new Promise(r => setTimeout(r, 0));
-      if (iter > 200000) return null;
+      if (iter % 5000 === 0) await new Promise(r => setTimeout(r, 0));
+      if (iter > 5000000) return null;
       if (i < 0) return null;
       if (i >= n - 1) {
         const path = [];
@@ -773,11 +779,12 @@ export async function runSimulation({
           if (blockConflictFound) conflictReasons[i].add('BLOCK_CONFLICT');
           if (stationConflictFound) conflictReasons[i].add('STATION_CONFLICT');
 
-          departAttempt[i] += 1;
-          if (i > 0) totalWaitMins += 1;
+          const stepSize = 5;
+          departAttempt[i] += stepSize;
+          if (i > 0) totalWaitMins += stepSize;
           const waitedHere = departAttempt[i] - waitStartedAt[i];
           if (
-            waitedHere === 1 &&
+            waitedHere === stepSize &&
             i > 0 &&
             !detainedStations.has(block.stn1.code)
           ) {
@@ -785,7 +792,7 @@ export async function runSimulation({
           }
 
           const stn1Halt = simStopsMap.has(block.stn1.code) ? simStopsMap.get(block.stn1.code) : 0;
-          if (waitedHere === 1 && stn1Halt === 0 && i > 0 && !detainedStations.has(block.stn1.code)) {
+          if (waitedHere === stepSize && stn1Halt === 0 && i > 0 && !detainedStations.has(block.stn1.code)) {
             detainedStations.add(block.stn1.code);
             diagnostics.backtrackCount++;
             for (let k = i; k < n; k++) {
@@ -1165,9 +1172,13 @@ export async function runSimulation({
       }
     } else {
       if (result && path.length === pathStations.length - 1 && !withinCompletion) {
+        console.warn(`[SIM ABORT] Path completed but exceeded completionMins. Path end: ${currTime}. tryFwd: ${tryFwd}`);
         if (tryFwd) tryStartMinsFwd = Infinity;
         else tryStartMinsBwd = Infinity;
       } else {
+        if (!result) {
+          console.warn(`[SIM ABORT] attemptPathFromTime returned null! tryStartMins: ${tryFwd ? tryStartMinsFwd : tryStartMinsBwd}, tryFwd: ${tryFwd}`);
+        }
         if (tryFwd) tryStartMinsFwd += hwMargin;
         else tryStartMinsBwd += hwMargin;
       }
@@ -1176,11 +1187,11 @@ export async function runSimulation({
 
   if (debug) {
     console.log('--- SIMULATOR FINAL DIAGNOSTICS ---');
-    console.log('[113 TRAIN INVESTIGATION]', {
+    console.log('[SIM SUMMARY]', {
       totalScheduled: foundPaths.length,
-      stationConflictChecks: diagnostics.stationConflictChecks,
-      stationCapacityFailures: diagnostics.stationCapacityFailures || 0,
-      blockConflictChecks: diagnostics.blockConflictChecks
+      finalTryStartMinsFwd: tryStartMinsFwd,
+      finalTryStartMinsBwd: tryStartMinsBwd,
+      uptoMins: uptoMins
     });
 
     const summaryReports = [];

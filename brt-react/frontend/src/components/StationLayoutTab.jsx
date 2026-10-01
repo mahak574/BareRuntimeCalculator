@@ -22,7 +22,7 @@ export default function StationLayoutTab() {
   const [selectedValue, setSelectedValue] = useState('');
   const [generatedLayout, setGeneratedLayout] = useState(null);
   const [appliedLayout, setAppliedLayout] = useState(null);
-  const [globalBlockOpTime, setGlobalBlockOpTime] = useState('');
+  const [globalBlockOpTime, setGlobalBlockOpTime] = useState(5);
 
   useEffect(() => {
     setAppliedLayout(null);

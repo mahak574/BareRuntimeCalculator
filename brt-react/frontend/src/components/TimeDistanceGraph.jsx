@@ -1459,9 +1459,10 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                   <input
                     type="number"
                     min="0"
+                    step="0.25"
                     placeholder="0"
                     value={globalBlockOpTime}
-                    onChange={e => setGlobalBlockOpTime(e.target.value)}
+                    onChange={e => setGlobalBlockOpTime(e.target.value === '' ? '' : Number(e.target.value))}
                     style={{ width: '100%', minWidth: 0, padding: '6px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', color: '#334155', boxSizing: 'border-box', backgroundColor: '#fff' }}
                   />
                 </div>
