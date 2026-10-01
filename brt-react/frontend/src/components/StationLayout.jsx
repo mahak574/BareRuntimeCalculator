@@ -438,11 +438,6 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       <line x1={trk.x1 + dx} y1={trk.y1 + dy} x2={trk.x2 + dx} y2={trk.y2 + dy} stroke={railFill} strokeWidth="1" />
                     </>
                   )}
-                  {(isBlue || isOrange) && (
-                    <g transform={`translate(${midX}, ${midY}) rotate(${arrowAngleDeg}) scale(1.5) translate(-6, -12)`}>
-                      <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill={arrowColor} />
-                    </g>
-                  )}
                 </g>
               )
             })}
@@ -1841,7 +1836,7 @@ function generateRenderData(layout) {
           const lb = linesB[idxB];
           const leA = lineEnds[`${node.code}-SEQ-${parseFloat(la.MANSEQNUMB)}`];
           const leB = lineEnds[`${nextNode.code}-SEQ-${parseFloat(lb.MANSEQNUMB)}`];
-          
+
           if (leA && leB && visualEdges.some(e => (e.leA.ref === leA.ref && e.leB.ref === leB.ref) || (e.leA.ref === leB.ref && e.leB.ref === leA.ref))) {
             pairs.push({ la, lb, leA, leB });
             usedA.add(idxA);

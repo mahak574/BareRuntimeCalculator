@@ -17,7 +17,7 @@ const TimeInput = ({ value, onChange, placeholder }) => {
       const [m, s] = placeholder.split(':');
       currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
     }
-    
+
     let step = direction === 'up' ? 0.25 : -0.25;
     let newMins = Math.max(0, currentMins + step);
     let rounded = Math.round(newMins * 4) / 4;
@@ -39,25 +39,25 @@ const TimeInput = ({ value, onChange, placeholder }) => {
   };
 
   const handleBlur = () => {
-      if (!internalVal) return;
-      if (internalVal.includes(':')) {
-          const [m, s] = internalVal.split(':');
-          let currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
-          let rounded = Math.round(currentMins * 4) / 4;
-          let newM = Math.floor(rounded);
-          let newS = Math.round((rounded - newM) * 60);
-          let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
-          setInternalVal(newStr);
-          onChange(newStr);
-      } else {
-          let currentMins = parseFloat(internalVal) || 0;
-          let rounded = Math.round(currentMins * 4) / 4;
-          let newM = Math.floor(rounded);
-          let newS = Math.round((rounded - newM) * 60);
-          let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
-          setInternalVal(newStr);
-          onChange(newStr);
-      }
+    if (!internalVal) return;
+    if (internalVal.includes(':')) {
+      const [m, s] = internalVal.split(':');
+      let currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
+      let rounded = Math.round(currentMins * 4) / 4;
+      let newM = Math.floor(rounded);
+      let newS = Math.round((rounded - newM) * 60);
+      let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
+      setInternalVal(newStr);
+      onChange(newStr);
+    } else {
+      let currentMins = parseFloat(internalVal) || 0;
+      let rounded = Math.round(currentMins * 4) / 4;
+      let newM = Math.floor(rounded);
+      let newS = Math.round((rounded - newM) * 60);
+      let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
+      setInternalVal(newStr);
+      onChange(newStr);
+    }
   };
 
   return (
@@ -75,14 +75,14 @@ const TimeInput = ({ value, onChange, placeholder }) => {
         style={{ flex: 1, minWidth: 0, padding: '4px', textAlign: 'center', border: 'none', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }}
       />
       <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid #cbd5e1', width: '20px', flexShrink: 0 }}>
-        <button 
-          type="button" 
-          onClick={() => increment('up')} 
+        <button
+          type="button"
+          onClick={() => increment('up')}
           style={{ background: '#f8fafc', border: 'none', borderBottom: '1px solid #cbd5e1', padding: '0', margin: '0', cursor: 'pointer', fontSize: '8px', flex: 1, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >▲</button>
-        <button 
-          type="button" 
-          onClick={() => increment('down')} 
+        <button
+          type="button"
+          onClick={() => increment('down')}
           style={{ background: '#f8fafc', border: 'none', padding: '0', margin: '0', cursor: 'pointer', fontSize: '8px', flex: 1, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >▼</button>
       </div>
@@ -1299,7 +1299,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               {/* Row 2: Operating Days */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
-                  Operating Days
+                  Source Departure Day
                 </label>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', backgroundColor: '#f8fafc', padding: '4px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                   {[
@@ -1349,7 +1349,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
               <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Departure From <span style={{ color: '#ef4444' }}>*</span>
+                    Source Dep. From <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
@@ -1360,7 +1360,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                 </div>
                 <div style={{ flex: '1 1 0%', minWidth: 0 }}>
                   <label style={{ display: 'block', fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Departure Upto <span style={{ color: '#ef4444' }}>*</span>
+                    Source Dep. Upto <span style={{ color: '#ef4444' }}>*</span>
                   </label>
                   <input
                     type="time"
@@ -1492,11 +1492,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         type="button"
                         onClick={() => {
                           const t = String(globalBlockOpTime || '00:00');
-                          let m=0, s=0;
-                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0])||0; s = parseInt(p[1])||0; }
-                          else { m = parseInt(t)||0; }
-                          let sec = Math.max(0, m*60 + s + 15);
-                          setGlobalBlockOpTime(Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0'));
+                          let m = 0, s = 0;
+                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0]) || 0; s = parseInt(p[1]) || 0; }
+                          else { m = parseInt(t) || 0; }
+                          let sec = Math.max(0, m * 60 + s + 15);
+                          setGlobalBlockOpTime(Math.floor(sec / 60).toString().padStart(2, '0') + ':' + (sec % 60).toString().padStart(2, '0'));
                         }}
                         style={{ flex: 1, background: '#f8fafc', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', borderBottom: '1px solid #e2e8f0', padding: 0 }}
                         title="Increase"
@@ -1505,11 +1505,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         type="button"
                         onClick={() => {
                           const t = String(globalBlockOpTime || '00:00');
-                          let m=0, s=0;
-                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0])||0; s = parseInt(p[1])||0; }
-                          else { m = parseInt(t)||0; }
-                          let sec = Math.max(0, m*60 + s - 15);
-                          setGlobalBlockOpTime(Math.floor(sec/60).toString().padStart(2,'0') + ':' + (sec%60).toString().padStart(2,'0'));
+                          let m = 0, s = 0;
+                          if (t.includes(':')) { const p = t.split(':'); m = parseInt(p[0]) || 0; s = parseInt(p[1]) || 0; }
+                          else { m = parseInt(t) || 0; }
+                          let sec = Math.max(0, m * 60 + s - 15);
+                          setGlobalBlockOpTime(Math.floor(sec / 60).toString().padStart(2, '0') + ':' + (sec % 60).toString().padStart(2, '0'));
                         }}
                         style={{ flex: 1, background: '#f8fafc', border: 'none', cursor: 'pointer', fontSize: '9px', color: '#64748b', padding: 0 }}
                         title="Decrease"
