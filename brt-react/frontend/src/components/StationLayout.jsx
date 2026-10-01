@@ -298,10 +298,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
         >
           <defs>
             <marker id="arrowBlue" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#3b82f6" />
             </marker>
             <marker id="arrowOrange" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#f97316" />
             </marker>
             <marker id="arrowGrey" markerWidth="24" markerHeight="24" refX="6" refY="12" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#cbd5e1" />
@@ -311,10 +311,10 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             </marker>
 
             <marker id="arrowBlueMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#2563ebff" transform="scale(1.5)" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#3b82f6" transform="scale(1.5)" />
             </marker>
             <marker id="arrowOrangeMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
-              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#ea580c" transform="scale(1.5)" />
+              <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#f97316" transform="scale(1.5)" />
             </marker>
             <marker id="arrowGreyMain" markerWidth="36" markerHeight="36" refX="9" refY="18" orient="auto-start-reverse" markerUnits="userSpaceOnUse">
               <path d="M 2 4 L 20 12 L 2 20 L 6 12 z" fill="#cbd5e1" transform="scale(1.5)" />
@@ -356,20 +356,20 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               <circle cx="12" cy="4" r="1" fill="#f8fafc" opacity="0.5" />
             </pattern>
             <linearGradient id="railGradOrange" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#ea580c" />
-              <stop offset="50%" stopColor="#ea580c" />
-              <stop offset="100%" stopColor="#ea580c" />
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="50%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="#f97316" />
             </linearGradient>
             <pattern id="sleepersOrange" width="12" height="16" patternUnits="userSpaceOnUse">
-              <rect x="2" y="0" width="8" height="16" fill="#ea580c" rx="2" />
+              <rect x="2" y="0" width="8" height="16" fill="#f97316" rx="2" />
             </pattern>
             <linearGradient id="railGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#2563ebff" />
-              <stop offset="50%" stopColor="#2563ebff" />
-              <stop offset="100%" stopColor="#2563ebff" />
+              <stop offset="0%" stopColor="#3b82f6" />
+              <stop offset="50%" stopColor="#3b82f6" />
+              <stop offset="100%" stopColor="#3b82f6" />
             </linearGradient>
             <pattern id="sleepersBlue" width="12" height="16" patternUnits="userSpaceOnUse">
-              <rect x="2" y="0" width="8" height="16" fill="#2563ebff" rx="2" />
+              <rect x="2" y="0" width="8" height="16" fill="#3b82f6" rx="2" />
             </pattern>
           </defs>
 
@@ -417,7 +417,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               const isBlue = trk.trackColor === 'blue';
               const isOrange = trk.trackColor === 'orange';
               if (!isBlue && !isOrange) return null;
-              const arrowColor = isBlue ? '#2563ebff' : (isOrange ? '#ea580c' : '#cbd5e1');
+              const arrowColor = isBlue ? '#3b82f6' : (isOrange ? '#f97316' : '#cbd5e1');
 
               let arrowAngle = trk.angle;
               if (isOrange) {
@@ -429,7 +429,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 <g key={`mlt-${i}`}>
                   {trkIsAbsolute ? (
                     <>
-                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#ea580c' : trk.trackColor === 'blue' ? '#2563ebff' : '#b0bec5'} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
+                      <line x1={trk.x1} y1={trk.y1} x2={trk.x2} y2={trk.y2} stroke={trk.trackColor === 'orange' ? '#f97316' : trk.trackColor === 'blue' ? '#3b82f6' : '#b0bec5'} strokeWidth={MAIN_TRACK_WIDTH} opacity="0.85" />
                     </>
                   ) : (
                     <>
@@ -479,11 +479,11 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   )}
                   {isBlockAbsolute(sl.adjacentBsCode) ? (
                     // Absolute signalling: filled rect, no stroke border, no shadow
-                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#ea580c' : sl.trackColor === 'blue' ? '#2563ebff' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
+                    <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? '#f97316' : sl.trackColor === 'blue' ? '#3b82f6' : '#64748b'} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="0.85" />
                   ) : (
                     // Auto signalling: thinner sleepers + two rails, no drop-shadow filter
                     <>
-                      <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="1" />
+                      <line x1={sl.x1} y1={sl.y} x2={sl.x2} y2={sl.y} stroke={sl.trackColor === 'orange' ? "url(#sleepersOrange)" : sl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={sl.isPhysicallyConnectedMain ? MAIN_TRACK_WIDTH : TRACK_LINE_WIDTH} opacity="0.85" />
                       <line x1={sl.x1} y1={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y - (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                       <line x1={sl.x1} y1={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} x2={sl.x2} y2={sl.y + (sl.isPhysicallyConnectedMain ? 2 : 1)} stroke={sl.trackColor === 'orange' ? "url(#railGradOrange)" : sl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                     </>
@@ -495,8 +495,8 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
             {renderData.blockLines.map((bl, i) => {
               if (bl.trackColor !== 'blue' && bl.trackColor !== 'orange') return null;
               const isAutoSignalling = String(layout?.blockSections?.[bl.bsCode]?.lines?.[0]?.MAVSIGNALLING || '').trim().toUpperCase() === 'AUTO';
-              const solidFill = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#b0bec5';
-              const solidFillLight = bl.trackColor === 'orange' ? '#ea580c' : bl.trackColor === 'blue' ? '#2563ebff' : '#cbd5e1';
+              const solidFill = bl.trackColor === 'orange' ? '#f97316' : bl.trackColor === 'blue' ? '#3b82f6' : '#b0bec5';
+              const solidFillLight = bl.trackColor === 'orange' ? '#f97316' : bl.trackColor === 'blue' ? '#3b82f6' : '#cbd5e1';
               return (
                 <g
                   key={`bl-${i}`}
@@ -521,7 +521,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   {isAutoSignalling ? (
                     /* Auto Signalling: thinner sleepers + two rails, no drop-shadow filter */
                     <>
-                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={MAIN_TRACK_WIDTH} opacity="1" />
+                      <line x1={bl.x1} y1={bl.y} x2={bl.x2} y2={bl.y} stroke={bl.trackColor === 'orange' ? "url(#sleepersOrange)" : bl.trackColor === 'blue' ? "url(#sleepersBlue)" : "url(#sleepers)"} strokeWidth={MAIN_TRACK_WIDTH} opacity="0.85" />
                       <line x1={bl.x1} y1={bl.y - 2} x2={bl.x2} y2={bl.y - 2} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                       <line x1={bl.x1} y1={bl.y + 2} x2={bl.x2} y2={bl.y + 2} stroke={bl.trackColor === 'orange' ? "url(#railGradOrange)" : bl.trackColor === 'blue' ? "url(#railGradBlue)" : "url(#railGrad)"} strokeWidth="1" />
                     </>
@@ -534,7 +534,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       y2={bl.y}
                       stroke={solidFillLight}
                       strokeWidth={MAIN_TRACK_WIDTH}
-                      opacity="1"
+                      opacity="0.85"
                       strokeLinecap="round"
                     />
                   )}
@@ -544,9 +544,9 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
 
             {renderData.connections.map((c, i) => {
               let arrowId = "arrowGrey";
-              if (c.color === '#ea580c') {
+              if (c.color === '#f97316') {
                 arrowId = "arrowOrange";
-              } else if (c.color === '#2563ebff' || c.color === '#2563eb') {
+              } else if (c.color === '#3b82f6' || c.color === '#3b82f6') {
                 arrowId = "arrowBlue";
               }
 
@@ -567,7 +567,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeWidth={MAIN_TRACK_WIDTH}
                       strokeLinecap="butt"
                       fill="none"
-                      opacity="1"
+                      opacity="0.85"
                       markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : `url(#${arrowId})`}
                     />
                   ) : c.isBidirectional ? (
@@ -577,7 +577,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeWidth="4"
                       strokeLinejoin="round"
                       fill="none"
-                      opacity="1"
+                      opacity="0.85"
                       markerStart={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
                       markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : "url(#arrowBi)"}
                     />
@@ -588,7 +588,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                       strokeWidth="4"
                       strokeLinejoin="round"
                       fill="none"
-                      opacity="1"
+                      opacity="0.85"
                       markerEnd={(c.isRedundantMainLine || c.isDClassConnection) ? "none" : `url(#${arrowId})`}
                     />
                   )}
@@ -630,7 +630,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                   e.stopPropagation();
                 }}
               >
-                <rect x={(sl.x1 + sl.x2) / 2 - 28} y={sl.y - 8} width="56" height="16" rx="8" fill={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563ebff" : "#ffffff"} stroke={sl.trackColor === 'orange' ? "#ea580c" : sl.trackColor === 'blue' ? "#2563ebff" : "#cbd5e1"} strokeWidth="1" />
+                <rect x={(sl.x1 + sl.x2) / 2 - 28} y={sl.y - 8} width="56" height="16" rx="8" fill={sl.trackColor === 'orange' ? "#f97316" : sl.trackColor === 'blue' ? "#3b82f6" : "#ffffff"} stroke={sl.trackColor === 'orange' ? "#f97316" : sl.trackColor === 'blue' ? "#3b82f6" : "#cbd5e1"} strokeWidth="1" />
                 <text x={(sl.x1 + sl.x2) / 2} y={sl.y + 4} fill={sl.trackColor === 'orange' ? "#ffffff" : sl.trackColor === 'blue' ? "#ffffff" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{sl.label}</text>
               </g>
             ))}
@@ -645,7 +645,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
                 }}
                 style={{ cursor: 'default' }}
               >
-                <rect x={(bl.x1 + bl.x2) / 2 - 28} y={bl.y - 8} width="56" height="16" rx="8" fill={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563ebff" : "#ffffff"} stroke={bl.trackColor === 'orange' ? "#ea580c" : bl.trackColor === 'blue' ? "#2563ebff" : "#cbd5e1"} strokeWidth="1" />
+                <rect x={(bl.x1 + bl.x2) / 2 - 28} y={bl.y - 8} width="56" height="16" rx="8" fill={bl.trackColor === 'orange' ? "#f97316" : bl.trackColor === 'blue' ? "#3b82f6" : "#ffffff"} stroke={bl.trackColor === 'orange' ? "#f97316" : bl.trackColor === 'blue' ? "#3b82f6" : "#cbd5e1"} strokeWidth="1" />
                 <text x={(bl.x1 + bl.x2) / 2} y={bl.y + 4} fill={bl.trackColor === 'orange' ? "#ffffff" : bl.trackColor === 'blue' ? "#ffffff" : "#475569"} fontSize="11" fontWeight="bold" textAnchor="middle" style={{ pointerEvents: 'none' }}>{bl.label}</text>
               </g>
             ))}
@@ -698,7 +698,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
           onContextMenu={(e) => e.preventDefault()}
         >
           <style>{`
-            .ctx-menu-hover:hover { background-color: #f1f5f9; color: #2563ebff; }
+            .ctx-menu-hover:hover { background-color: #f1f5f9; color: #3b82f6; }
             .ctx-menu-item:hover .ctx-submenu { display: block !important; }
           `}</style>
           <div style={{ padding: '4px 16px', borderBottom: '1px solid #e2e8f0', marginBottom: '4px', fontWeight: 'bold', color: '#64748b', fontSize: '12px' }}>
@@ -1167,7 +1167,7 @@ export default function StationLayout({ layout, scrollToStation, navTrigger, onM
               return (
                 <>
                   <div style={{ fontWeight: 'bold', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '4px' }}>{title} ({lineName})</div>
-                  <div>Signal: <span style={{ fontWeight: '500', color: '#2563ebff' }}>{sig}</span></div>
+                  <div>Signal: <span style={{ fontWeight: '500', color: '#3b82f6' }}>{sig}</span></div>
                   <div>Speed: <span style={{ fontWeight: '500', color: '#16a34a' }}>{spdStr}</span></div>
                 </>
               );
@@ -1220,12 +1220,16 @@ function generateRenderData(layout) {
     if (type === 'station') {
       const stn = layout.stations[code];
       if (stn && stn.lines) {
-        lines = stn.lines.filter(l => {
-          const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
-          return cat === 'M' || cat === 'MAIN';
-        });
-        if (lines.length === 0) {
-          lines = stn.lines.filter(l => parseFloat(l.MANSEQNUMB) <= 2);
+        if (code === 'KOTA') {
+          lines = stn.lines.filter(l => String(l.MACSTATIONLINE).trim() === '2' || String(l.MACSTATIONLINE).trim() === '3');
+        } else {
+          lines = stn.lines.filter(l => {
+            const cat = String(l.MACLINECATEGORY || '').trim().toUpperCase();
+            return cat === 'M' || cat === 'MAIN';
+          });
+          if (lines.length === 0) {
+            lines = stn.lines.filter(l => parseFloat(l.MANSEQNUMB) <= 2);
+          }
         }
       }
     } else {
@@ -1659,11 +1663,18 @@ function generateRenderData(layout) {
     // We enforce that the corridor main lines (Block Section Seq 1 & 2) connect 
     // to KOTA Line 2 (Seq 2) and Line 3 (Seq 3) respectively, ensuring continuity.
     const stnCodeNorm = String(conn.MAVSTTNCODE || '').trim().toUpperCase();
+    let forcedMainLine = false;
     if (stnCodeNorm === 'KOTA' && bsLine) {
+      let forcedStnLine = null;
       if (bsLine.lineIndex === 0) {
-        stnLine = lineEnds['KOTA-LINE-2'] || lineEnds['KOTA-SEQ-2'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 1);
+        forcedStnLine = Object.values(lineEnds).find(le => le.ref && le.ref.stnCode === 'KOTA' && String(le.ref.label).trim() === '2');
       } else if (bsLine.lineIndex === 1) {
-        stnLine = lineEnds['KOTA-LINE-3'] || lineEnds['KOTA-SEQ-3'] || data.stationLines.find(sl => sl.stnCode === 'KOTA' && sl.lineIndex === 2);
+        forcedStnLine = Object.values(lineEnds).find(le => le.ref && le.ref.stnCode === 'KOTA' && String(le.ref.label).trim() === '3');
+      }
+      if (forcedStnLine) {
+        stnLine = forcedStnLine;
+        stnLineNum = forcedStnLine.ref.seq;
+        forcedMainLine = true;
       }
     }
 
@@ -1700,7 +1711,11 @@ function generateRenderData(layout) {
       const actualStnLine = layout.stations[conn.MAVSTTNCODE]?.lines.find(l => parseFloat(l.MANSEQNUMB) === stnLineNum);
       const isMSyncType = conn.MACCONNECTNTYPE === 'M';
       const stnCat = actualStnLine ? String(actualStnLine.MACLINECATEGORY || '').trim().toUpperCase() : '';
-      const isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
+      let isMainLineConnection = isMSync || isMSyncType || stnCat === 'M' || stnCat === 'MAIN';
+      
+      if (forcedMainLine) {
+        isMainLineConnection = true;
+      }
 
       const varFactor = (stnLineNum % 2 === 0) ? 1 : -1;
       const isStraight = absDy < 5;
@@ -1758,7 +1773,7 @@ function generateRenderData(layout) {
 
       const isRedundantMainLine = adjacentStnIsDClass && isMainLineConnection;
 
-      let connectionColor = (isLeftToRight ? '#2563ebff' : '#ea580c');
+      let connectionColor = (isLeftToRight ? '#3b82f6' : '#f97316');
       if (isBidirectional || isMSync) {
         connectionColor = '#10b981'; // Green for sync
       }
@@ -2012,7 +2027,7 @@ function generateRenderData(layout) {
         rawConn: {},
         path,
         startX, startY, endX, endY,
-        color: leA.trackColor === 'blue' ? '#2563eb' : (leA.trackColor === 'orange' ? '#ea580c' : '#b0bec5'),
+        color: leA.trackColor === 'blue' ? '#3b82f6' : (leA.trackColor === 'orange' ? '#f97316' : '#b0bec5'),
         isLeftToRight: startX < endX,
         isBidirectional: false,
         isMainLineConnection: false,
@@ -2116,9 +2131,10 @@ function generateRenderData(layout) {
     else if (mlt.le2 && mlt.le2.trackColor !== 'default') mlt.trackColor = mlt.le2.trackColor;
   });
   data.connections.forEach(conn => {
-    if (conn.leA && conn.leA.trackColor !== 'default') conn.color = conn.leA.trackColor === 'blue' ? '#2563eb' : '#ea580c';
-    else if (conn.leB && conn.leB.trackColor !== 'default') conn.color = conn.leB.trackColor === 'blue' ? '#2563eb' : '#ea580c';
+    if (conn.leA && conn.leA.trackColor !== 'default') conn.color = conn.leA.trackColor === 'blue' ? '#3b82f6' : '#f97316';
+    else if (conn.leB && conn.leB.trackColor !== 'default') conn.color = conn.leB.trackColor === 'blue' ? '#3b82f6' : '#f97316';
   });
 
   return data;
 }
+

@@ -651,8 +651,18 @@ export async function runSimulation({
             }
           }
 
-          if (override && !isNaN(parseFloat(override)) && parseFloat(override) > 0) {
-            foundRuntime = parseFloat(override);
+          const parseTime = (val) => {
+            if (typeof val === 'string' && val.includes(':')) {
+              const [m, s] = val.split(':');
+              return parseInt(m || 0, 10) + parseInt(s || 0, 10) / 60;
+            }
+            return parseFloat(val);
+          };
+
+          const parsedOverride = override ? parseTime(override) : NaN;
+
+          if (!isNaN(parsedOverride) && parsedOverride > 0) {
+            foundRuntime = parsedOverride;
           } else if (defRuntime) {
             foundRuntime = defRuntime;
           }

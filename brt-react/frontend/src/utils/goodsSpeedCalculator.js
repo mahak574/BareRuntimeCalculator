@@ -137,112 +137,136 @@ function buildPhysicalSections(layout) {
 
 
 /**
- * Compute Median Absolute Deviation (MAD).
+ * Helper to approximate the inverse CDF of the standard normal distribution,
+ * then approximate the inverse CDF of the t-distribution.
  */
-function computeMAD(values) {
-
-  if (values.length === 0) {
-    return {
-      median: NaN,
-      mad: NaN
-    };
+function tInvApprox(p, df) {
+  const t = p < 0.5 ? p : 1 - p;
+  const a = Math.sqrt(-2 * Math.log(t));
+  const c = [2.515517, 0.802853, 0.010328];
+  const d = [1.432788, 0.189269, 0.001308];
+  const num = c[0] + a * (c[1] + a * c[2]);
+  const den = 1 + a * (d[0] + a * (d[1] + a * d[2]));
+  let z = a - num / den;
+  if (p < 0.5) z = -z;
+  
+  if (df <= 0) return NaN;
+  if (df < 1e5) {
+      const z2 = z * z;
+      return z + (z * (z2 + 1)) / (4 * df) + (z * (5 * z2 * z2 + 16 * z2 + 3)) / (96 * df * df);
   }
-
-  const sorted =
-    [...values].sort(
-      (a, b) => a - b
-    );
-
-  const mid =
-    Math.floor(
-      sorted.length / 2
-    );
-
-  const median =
-    sorted.length % 2 !== 0
-      ? sorted[mid]
-      : (
-        sorted[mid - 1] +
-        sorted[mid]
-      ) / 2;
-
-  const deviations =
-    values.map(
-      v => Math.abs(v - median)
-    );
-
-  const sortedDev =
-    [...deviations].sort(
-      (a, b) => a - b
-    );
-
-  const devMid =
-    Math.floor(
-      sortedDev.length / 2
-    );
-
-  const mad =
-    sortedDev.length % 2 !== 0
-      ? sortedDev[devMid]
-      : (
-        sortedDev[devMid - 1] +
-        sortedDev[devMid]
-      ) / 2;
-
-  return {
-    median,
-    mad
-  };
+  return z;
 }
 
-
 /**
- * Apply MAD filtering and return mean.
+ * Helper to calculate median and IQR fences.
  */
-function madFilteredMean(speeds) {
-
-  if (speeds.length === 0) {
-    return null;
+function getTukeyFences(data) {
+  if (data.length === 0) return { minFence: 0, maxFence: 0, median: 0 };
+  const sorted = [...data].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  
+  if (sorted.length < 4) return { minFence: sorted[0], maxFence: sorted[sorted.length - 1], median };
+  
+  const q1Idx = Math.floor(sorted.length * 0.25);
+  const q3Idx = Math.floor(sorted.length * 0.75);
+  const q1 = sorted[q1Idx];
+  const q3 = sorted[q3Idx];
+  let iqr = q3 - q1;
+  
+  if (iqr === 0) {
+      const mean = data.reduce((a, b) => a + b, 0) / data.length;
+      const stdDev = Math.sqrt(data.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (data.length || 1));
+      iqr = stdDev > 0 ? stdDev * 1.35 : mean * 0.1;
+      if (iqr === 0) iqr = 0.1;
   }
 
-  let filtered = speeds;
+  const minFence = q1 - 1.5 * iqr;
+  const maxFence = q3 + 1.5 * iqr;
+  
+  return { minFence, maxFence, median };
+}
 
-  if (speeds.length >= 4) {
+/**
+ * Apply Generalized ESD test filtering and return mean.
+ */
+function gesdFilteredMean(speeds, alpha = 0.05, contextInfo = null) {
+  if (speeds.length === 0) return null;
+  
+  let data = speeds.map(v => Number(v)).filter(v => !isNaN(v));
+  const n = data.length;
+  
+  if (n === 0) return null;
 
-    const {
-      median,
-      mad
-    } = computeMAD(speeds);
+  const { minFence, maxFence, median } = getTukeyFences(data);
 
-    const threshold =
-      Math.max(
-        3 * mad,
-        2
-      );
+  if (n <= 4) {
+      return median;
+  }
 
-    const candidate =
-      speeds.filter(
-        s =>
-          Math.abs(
-            s - median
-          ) <= threshold
-      );
+  const maxOutliers = Math.min(Math.max(1, Math.floor(n * 0.15)), n - 2); 
+  
+  let currentData = data.map((v, i) => ({ value: v, index: i }));
+  const R_vals = [];
+  const lambda_vals = [];
+  const removedSequence = [];
 
-    if (candidate.length > 0) {
-      filtered = candidate;
+  for (let i = 1; i <= maxOutliers; i++) {
+    const mean = currentData.reduce((sum, item) => sum + item.value, 0) / currentData.length;
+    const stdDev = Math.sqrt(currentData.reduce((sum, item) => sum + Math.pow(item.value - mean, 2), 0) / (currentData.length - 1));
+    
+    if (stdDev === 0) break;
+
+    let maxDev = -1;
+    let maxIdx = -1;
+    let removePos = -1;
+    let maxVal = 0;
+    
+    currentData.forEach((item, pos) => {
+      const dev = Math.abs(item.value - mean);
+      if (dev > maxDev) {
+        maxDev = dev;
+        maxIdx = item.index;
+        removePos = pos;
+        maxVal = item.value;
+      }
+    });
+
+    const R = maxDev / stdDev;
+    R_vals.push(R);
+    removedSequence.push({ index: maxIdx, value: maxVal });
+    currentData.splice(removePos, 1);
+
+    const p = 1 - alpha / (2 * (n - i + 1));
+    const df = n - i - 1;
+    const t_val = tInvApprox(p, df);
+    
+    const lambda = ((n - i) * t_val) / Math.sqrt((df + t_val * t_val) * (n - i + 1));
+    lambda_vals.push(lambda);
+  }
+
+  let numOutliers = 0;
+  for (let i = 0; i < R_vals.length; i++) {
+    if (R_vals[i] > lambda_vals[i]) {
+      numOutliers = i + 1;
     }
   }
 
-  if (filtered.length === 0) {
-    return null;
+  const finalOutliers = [];
+  for (let i = 0; i < numOutliers; i++) {
+      const rm = removedSequence[i];
+      if (rm.value < minFence || rm.value > maxFence) {
+          finalOutliers.push(rm.index);
+      }
   }
 
-  return (
-    filtered.reduce(
-      (a, b) => a + b,
-      0
-    ) / filtered.length
-  );
+  const finalOutlierSet = new Set(finalOutliers);
+  const filtered = data.filter((_, i) => !finalOutlierSet.has(i));
+  
+  const finalMean = filtered.length > 0 ? filtered.reduce((a, b) => a + b, 0) / filtered.length : null;
+
+  return finalMean;
 }
 
 
@@ -596,7 +620,7 @@ export async function calculateGoodsSpeedConfig(
 
 
     // ============================================================
-    // STEP 7: MAD filter → mean → store default speed
+    // STEP 7: GESD test filter → mean → store default speed
     // ============================================================
 
     Object.keys(config).forEach(dir => {
@@ -621,23 +645,22 @@ export async function calculateGoodsSpeedConfig(
             sample.runtimes.length > 0
           ) {
 
-            // Independently calculate MAD-filtered
+            // Independently calculate GESD-filtered
             // mean for this exact category.
             const defaultRuntime =
-              madFilteredMean(
-                [...sample.runtimes]
+              gesdFilteredMean(
+                [...sample.runtimes],
+                0.05,
+                { dir, code, lt }
               );
 
             if (
               defaultRuntime !== null &&
               defaultRuntime > 0
             ) {
-
+              const rounded = Math.max(0.25, Math.round(defaultRuntime * 4) / 4);
               config[dir][code][lt]
-                .defaultRuntime =
-                parseFloat(
-                  defaultRuntime.toFixed(1)
-                );
+                .defaultRuntime = rounded;
 
               config[dir][code][lt]
                 .hasData = true;

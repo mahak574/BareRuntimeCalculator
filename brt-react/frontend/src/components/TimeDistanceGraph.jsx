@@ -2,6 +2,94 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { runSimulation as runSimulationExternal } from '../simulation/freightScheduler';
 import { calculateGoodsSpeedConfig } from '../utils/goodsSpeedCalculator';
 
+const TimeInput = ({ value, onChange, placeholder }) => {
+  const [internalVal, setInternalVal] = React.useState(value);
+  React.useEffect(() => setInternalVal(value), [value]);
+
+  const increment = (direction) => {
+    let currentMins = 0;
+    if (internalVal && internalVal.includes(':')) {
+      const [m, s] = internalVal.split(':');
+      currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
+    } else if (internalVal) {
+      currentMins = parseFloat(internalVal) || 0;
+    } else if (placeholder && placeholder.includes(':')) {
+      const [m, s] = placeholder.split(':');
+      currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
+    }
+    
+    let step = direction === 'up' ? 0.25 : -0.25;
+    let newMins = Math.max(0, currentMins + step);
+    let rounded = Math.round(newMins * 4) / 4;
+    let m = Math.floor(rounded);
+    let s = Math.round((rounded - m) * 60);
+    let newStr = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    setInternalVal(newStr);
+    onChange(newStr);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      increment('up');
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      increment('down');
+    }
+  };
+
+  const handleBlur = () => {
+      if (!internalVal) return;
+      if (internalVal.includes(':')) {
+          const [m, s] = internalVal.split(':');
+          let currentMins = parseInt(m || 0) + parseInt(s || 0) / 60;
+          let rounded = Math.round(currentMins * 4) / 4;
+          let newM = Math.floor(rounded);
+          let newS = Math.round((rounded - newM) * 60);
+          let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
+          setInternalVal(newStr);
+          onChange(newStr);
+      } else {
+          let currentMins = parseFloat(internalVal) || 0;
+          let rounded = Math.round(currentMins * 4) / 4;
+          let newM = Math.floor(rounded);
+          let newS = Math.round((rounded - newM) * 60);
+          let newStr = `${newM.toString().padStart(2, '0')}:${newS.toString().padStart(2, '0')}`;
+          setInternalVal(newStr);
+          onChange(newStr);
+      }
+  };
+
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'stretch', border: '1px solid #cbd5e1', borderRadius: '4px', overflow: 'hidden', width: '85px', height: '28px', backgroundColor: '#fff' }}>
+      <input
+        type="text"
+        value={internalVal}
+        onChange={(e) => {
+          setInternalVal(e.target.value);
+          onChange(e.target.value);
+        }}
+        onKeyDown={handleKeyDown}
+        onBlur={handleBlur}
+        placeholder={placeholder}
+        style={{ flex: 1, minWidth: 0, padding: '4px', textAlign: 'center', border: 'none', outline: 'none', fontSize: '13px', boxSizing: 'border-box' }}
+      />
+      <div style={{ display: 'flex', flexDirection: 'column', borderLeft: '1px solid #cbd5e1', width: '20px', flexShrink: 0 }}>
+        <button 
+          type="button" 
+          onClick={() => increment('up')} 
+          style={{ background: '#f8fafc', border: 'none', borderBottom: '1px solid #cbd5e1', padding: '0', margin: '0', cursor: 'pointer', fontSize: '8px', flex: 1, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >▲</button>
+        <button 
+          type="button" 
+          onClick={() => increment('down')} 
+          style={{ background: '#f8fafc', border: 'none', padding: '0', margin: '0', cursor: 'pointer', fontSize: '8px', flex: 1, color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >▼</button>
+      </div>
+    </div>
+  );
+};
+
 /**
  * TimeDistanceGraph renders a dynamic 2D graph where:
  * - The Y-axis represents Physical Distance (stations spaced according to the layout).
@@ -1655,9 +1743,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                       const setOvr = (dir, load, val) => setGoodsSpeedOverrides(prev => ({ ...prev, [`${dir}_${row.secCode}_${load}`]: val }));
 
                       const formatDef = (v) => {
-                        return v !== null && v !== undefined && Number.isFinite(Number(v))
-                          ? Number(v).toFixed(1)
-                          : 'N/A';
+                        if (v === null || v === undefined || !Number.isFinite(Number(v))) return 'N/A';
+                        const num = Number(v);
+                        const m = Math.floor(num);
+                        const s = Math.round((num - m) * 60);
+                        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
                       };
 
                       const fwdLoadedDef = formatDef(row.fwdLoadedDef, `${row.secCode} fwdLoaded`);
@@ -1669,40 +1759,32 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         <tr key={row.secCode} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.fwdName}</td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('forward', 'LOADED')}
-                              onChange={e => setOvr('forward', 'LOADED', e.target.value)}
-                              placeholder={`[ ${fwdLoadedDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('forward', 'LOADED', val)}
+                              placeholder={fwdLoadedDef}
                             />
                           </td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '2px solid #cbd5e1' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('forward', 'EMPTY')}
-                              onChange={e => setOvr('forward', 'EMPTY', e.target.value)}
-                              placeholder={`[ ${fwdEmptyDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('forward', 'EMPTY', val)}
+                              placeholder={fwdEmptyDef}
                             />
                           </td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.bwdName}</td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('backward', 'LOADED')}
-                              onChange={e => setOvr('backward', 'LOADED', e.target.value)}
-                              placeholder={`[ ${bwdLoadedDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('backward', 'LOADED', val)}
+                              placeholder={bwdLoadedDef}
                             />
                           </td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('backward', 'EMPTY')}
-                              onChange={e => setOvr('backward', 'EMPTY', e.target.value)}
-                              placeholder={`[ ${bwdEmptyDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('backward', 'EMPTY', val)}
+                              placeholder={bwdEmptyDef}
                             />
                           </td>
                         </tr>
@@ -1762,9 +1844,11 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                       const setOvr = (dir, load, val) => setGoodsSpeedOverrides(prev => ({ ...prev, [`${dir}_${row.secCode}_${load}`]: val }));
 
                       const formatDef = (v) => {
-                        return v !== null && v !== undefined && Number.isFinite(Number(v))
-                          ? Number(v).toFixed(1)
-                          : 'N/A';
+                        if (v === null || v === undefined || !Number.isFinite(Number(v))) return 'N/A';
+                        const num = Number(v);
+                        const m = Math.floor(num);
+                        const s = Math.round((num - m) * 60);
+                        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
                       };
 
                       const fwdCoachingDef = formatDef(row.fwdCoachingDef);
@@ -1774,22 +1858,18 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                         <tr key={row.secCode} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.fwdName}</td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', borderRight: '2px solid #cbd5e1' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('forward', 'COACHING')}
-                              onChange={e => setOvr('forward', 'COACHING', e.target.value)}
-                              placeholder={`[ ${fwdCoachingDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('forward', 'COACHING', val)}
+                              placeholder={fwdCoachingDef}
                             />
                           </td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', fontWeight: '600', color: '#334155' }}>{row.bwdName}</td>
                           <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0' }}>
-                            <input
-                              type="number"
+                            <TimeInput
                               value={getOvr('backward', 'COACHING')}
-                              onChange={e => setOvr('backward', 'COACHING', e.target.value)}
-                              placeholder={`[ ${bwdCoachingDef} ]`}
-                              style={{ width: '70px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
+                              onChange={val => setOvr('backward', 'COACHING', val)}
+                              placeholder={bwdCoachingDef}
                             />
                           </td>
                         </tr>
