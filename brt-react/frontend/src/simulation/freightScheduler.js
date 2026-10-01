@@ -933,7 +933,7 @@ export async function runSimulation({
       }
 
       if (isAuto) {
-        capacity = Math.max(1, Math.floor(dist / 3.6));
+        capacity = Math.max(2, Math.floor(dist / 1.5));
       } else {
         capacity = 1;
       }
