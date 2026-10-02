@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { api } from '../api';
+import { api, clearApiCache } from '../api';
 import StationLayout from './StationLayout';
 import ErrorBoundary from './ErrorBoundary';
 import LayoutLegend from './LayoutLegend';
@@ -40,7 +40,25 @@ export default function StationLayoutTab() {
     return JSON.parse(JSON.stringify(sheets || {}));
   };
 
+  const [fetchKey, setFetchKey] = useState(0);
+
   useEffect(() => {
+    const refetch = () => setFetchKey(k => k + 1);
+    window.addEventListener('layoutDataUpdated', refetch);
+    return () => window.removeEventListener('layoutDataUpdated', refetch);
+  }, []);
+
+  useEffect(() => {
+    if (fetchKey > 0) {
+      clearApiCache();
+    } else {
+      // On initial mount: check if a layout refresh was flagged by DataTab
+      // (handles the case where the event fired while this tab wasn't mounted)
+      if (sessionStorage.getItem('layoutRefreshPending') === '1') {
+        sessionStorage.removeItem('layoutRefreshPending');
+        clearApiCache();
+      }
+    }
     api.layoutData()
       .then(res => {
         if (res && res.sheets && res.sheets.StationLine) {
@@ -91,7 +109,7 @@ export default function StationLayoutTab() {
         setLoading(false);
       })
       .catch(err => { setError(err.message); setLoading(false); });
-  }, []);
+  }, [fetchKey]);
 
   const options = useMemo(() => {
     if (!data) return [];

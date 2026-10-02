@@ -338,7 +338,20 @@ def load_and_process_data(force_reload=False):
     movement_df = movement_df.sort_values(["train", "train_date", "cadarvldprttime"], kind="mergesort").reset_index(drop=True)
 
     master_xl = pd.ExcelFile(master_path)
-    full_master_df = pd.read_excel(master_xl, sheet_name="Sheet1")
+    
+    def find_sheet(xl, req_cols, fb_idx):
+        for s in xl.sheet_names:
+            try:
+                df_temp = pd.read_excel(xl, sheet_name=s, nrows=0)
+                cols = [str(c).strip().upper() for c in df_temp.columns]
+                if all(r.upper() in cols for r in req_cols):
+                    return s
+            except Exception:
+                pass
+        return xl.sheet_names[fb_idx] if fb_idx < len(xl.sheet_names) else xl.sheet_names[0]
+
+    sheet1_name = find_sheet(master_xl, MASTER_COLS, 0)
+    full_master_df = pd.read_excel(master_xl, sheet_name=sheet1_name)
     full_master_df.columns = [str(c).strip() for c in full_master_df.columns]
 
     missing_cols = [c for c in MASTER_COLS if c not in full_master_df.columns]
@@ -354,7 +367,8 @@ def load_and_process_data(force_reload=False):
     master["NEXT_STATION"] = master.groupby("TRAINNUMBER", sort=False)["STTNCODE"].shift(-1)
 
     try:
-        mps_df = pd.read_excel(master_xl, sheet_name="Sheet2")
+        sheet2_name = find_sheet(master_xl, ["TRAIN", "MPS"], 1)
+        mps_df = pd.read_excel(master_xl, sheet_name=sheet2_name)
         mps_df.columns = [str(c).strip().upper() for c in mps_df.columns]
         mps_df["TRAIN"] = pd.to_numeric(mps_df["TRAIN"], errors="coerce")
         mps_df = mps_df.dropna(subset=["TRAIN"]).copy()
@@ -366,7 +380,8 @@ def load_and_process_data(force_reload=False):
     master["MPS"] = pd.to_numeric(master["MPS"], errors="coerce")
 
     try:
-        section_df = pd.read_excel(master_xl, sheet_name="Sheet3")
+        sheet3_name = find_sheet(master_xl, ["SECTION", "BLCKSCTN"], 2)
+        section_df = pd.read_excel(master_xl, sheet_name=sheet3_name)
         section_df.columns = [str(c).strip().upper() for c in section_df.columns]
         section_df = section_df[["SECTION", "BLCKSCTN"]].dropna().drop_duplicates("BLCKSCTN")
         section_map = dict(zip(

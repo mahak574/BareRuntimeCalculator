@@ -111,15 +111,41 @@ async def upload_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save uploaded file(s): {e}")
 
-    core.clear_cache()
-    core.clear_local_cache_files()
-    data = get_loaded()
+    # Always delete the layout JSON cache when route or schedule changed
+    if route_file is not None or schedule_file is not None:
+        layout_cache = os.path.join(core.DATA_DIR, f"{core.ROUTE_FILE}_layout_cache.json")
+        try:
+            if os.path.exists(layout_cache):
+                os.remove(layout_cache)
+        except Exception:
+            pass
+
+    cris_data_changed = movement_file is not None or master_file is not None
+
+    if cris_data_changed:
+        # Full reload: clear in-memory cache + parquet cache, then rebuild
+        core.clear_cache()
+        core.clear_local_cache_files()
+        data = get_loaded()
+        train_count = int(data["master"]["TRAINNUMBER"].dropna().nunique())
+        load_time = data["load_time_sec"]
+    else:
+        # Route/schedule only: just clear in-memory cache (no expensive CSV rebuild)
+        core.clear_cache()
+        # Use cached data for the response metadata
+        try:
+            data = get_loaded()
+            train_count = int(data["master"]["TRAINNUMBER"].dropna().nunique())
+            load_time = data["load_time_sec"]
+        except Exception:
+            train_count = 0
+            load_time = 0.0
 
     return {
         "uploaded": saved,
         "reloaded": True,
-        "load_time_sec": data["load_time_sec"],
-        "trains": int(data["master"]["TRAINNUMBER"].dropna().nunique()),
+        "load_time_sec": load_time,
+        "trains": train_count,
     }
 
 @app.get("/api/trains")
@@ -194,20 +220,42 @@ def layout_data():
             
     available = [s if s not in ["Platform", "Platfrom"] else "Platform" for s in target_route_sheets if s in route_sheets or s in sched_sheets]
 
-    if sched_xl and "Schedule" in sched_xl.sheet_names:
-        df = pd.read_excel(sched_xl, sheet_name="Schedule")
+    def find_schedule_sheet_by_name(xl):
+        """Look for a sheet literally named 'Schedule' (case-insensitive)."""
+        if not xl: return None
+        for s in xl.sheet_names:
+            if s.strip().lower() == "schedule":
+                return s
+        return None
+
+    def find_schedule_sheet_by_cols(xl):
+        """Fallback: scan sheets by expected column signatures."""
+        if not xl: return None
+        for s in xl.sheet_names:
+            try:
+                df_temp = pd.read_excel(xl, sheet_name=s, nrows=0)
+                cols = [str(c).strip().upper() for c in df_temp.columns]
+                if any(x in cols for x in ["TRAIN NO.", "TRAIN NO"]) and any(x in cols for x in ["STATION", "STN", "STATION CODE"]):
+                    return s
+            except:
+                pass
+        return None
+
+    # Route file first: only match by sheet NAME "Schedule" (safe, no false positives)
+    sched_sheet_name = find_schedule_sheet_by_name(route_xl)
+    xl_to_use = route_xl
+    # Fallback to separate schedule file: match by name first, then by columns
+    if not sched_sheet_name:
+        sched_sheet_name = find_schedule_sheet_by_name(sched_xl) or find_schedule_sheet_by_cols(sched_xl)
+        xl_to_use = sched_xl
+
+    if sched_sheet_name and xl_to_use:
+        df = pd.read_excel(xl_to_use, sheet_name=sched_sheet_name)
         df = df.fillna("")
         data["Schedule"] = df.to_dict(orient="records")
         available.append("Schedule")
     else:
-        # Fallback to route_xl if it contains Schedule (backwards compat)
-        if "Schedule" in route_sheets:
-            df = pd.read_excel(route_xl, sheet_name="Schedule")
-            df = df.fillna("")
-            data["Schedule"] = df.to_dict(orient="records")
-            available.append("Schedule")
-        else:
-            data["Schedule"] = []
+        data["Schedule"] = []
 
     result = {"sheets": data, "available": available}
     result = core.sanitize_json(result)

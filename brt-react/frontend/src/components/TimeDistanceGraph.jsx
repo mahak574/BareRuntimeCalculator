@@ -208,13 +208,23 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
   }, []);
 
   useEffect(() => {
-    if (layout && layout.sequence) {
-      calculateGoodsSpeedConfig(null, layout).then(config => {
-        setGoodsSpeedConfig(config);
-      }).catch(err => {
-        console.error('Goods speed config calculation failed:', err);
-      });
-    }
+    const runCalc = () => {
+      if (layout && layout.sequence) {
+        calculateGoodsSpeedConfig(null, layout).then(config => {
+          setGoodsSpeedConfig(config);
+        }).catch(err => {
+          console.error('Goods speed config calculation failed:', err);
+        });
+      }
+    };
+    runCalc();
+    // Re-run if user uploads new speed data from Data Hub tab
+    window.addEventListener('speedDataUpdated', runCalc);
+    window.addEventListener('storage', runCalc);
+    return () => {
+      window.removeEventListener('speedDataUpdated', runCalc);
+      window.removeEventListener('storage', runCalc);
+    };
   }, [layout]);
 
 

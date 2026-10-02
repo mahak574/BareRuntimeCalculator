@@ -605,7 +605,7 @@ export async function calculateGoodsSpeedConfig(
 
 
     // ============================================================
-    // STEP 6: Read Parquet Files
+    // STEP 6: Read Parquet Files + User-uploaded speed data
     // ============================================================
 
     await parseParquetFile(
@@ -617,6 +617,40 @@ export async function calculateGoodsSpeedConfig(
       bplParquetUrl,
       processRow
     );
+
+    // Also process any user-uploaded speed data rows (stored in localStorage)
+    try {
+      const stored = localStorage.getItem('SPEED_DATA_CONFIG');
+      if (stored) {
+        const userConfig = JSON.parse(stored);
+        // userConfig is keyed as `${dir}_${blockCode}_${loadType}` => medianRuntimeMins
+        // Inject these as additional "samples" so they influence the final config
+        Object.entries(userConfig).forEach(([key, medianMins]) => {
+          if (!medianMins || medianMins <= 0) return;
+          const parts = key.split('_');
+          if (parts.length < 3) return;
+          const lt = parts[parts.length - 1]; // LOADED, EMPTY, COACHING
+          const dir = parts[0]; // forward / backward
+          const code = parts.slice(1, parts.length - 1).join('_');
+          const aggKey = `${dir}_${code}_${lt}`;
+          if (!speedSamples[aggKey]) {
+            speedSamples[aggKey] = {
+              direction: dir,
+              blockCode: code,
+              loadType: lt,
+              distanceKm: 0,
+              runtimes: [],
+              rawCount: 0
+            };
+          }
+          // Add the user median as a sample (weighted like 1 observation)
+          speedSamples[aggKey].runtimes.push(medianMins);
+          speedSamples[aggKey].rawCount++;
+        });
+      }
+    } catch (_e) {
+      // silently ignore
+    }
 
 
     // ============================================================
