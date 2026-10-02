@@ -1077,8 +1077,8 @@ export async function runSimulation({
       isForward: isFwd,
       daysOfSrvc: daysStr,
       isSimulated: true,
-      totalDetention: totalWaitMins,
-      detentionCount: detentionCount,
+      totalDetention: stops.reduce((sum, s) => sum + (s.detentionMinutes || 0), 0),
+      detentionCount: stops.filter(s => (s.detentionMinutes || 0) > 0).length,
       stationCodes: stops.map(s => s.station)
     };
   };

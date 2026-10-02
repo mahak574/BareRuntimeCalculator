@@ -2854,16 +2854,21 @@ function GraphContent({ layout, containerWidth, graphData, hoveredTrain, setHove
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       <h3 style={{ margin: 0, color: tr.color }}>{tr.isSimulated ? tr.name : (tr.originalTrainNo || tr.trainNo)} - {tr.isSimulated ? 'Simulated Path' : (tr.name || 'Train')}</h3>
                       {tr.isSimulated && (
-                        <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 'bold', padding: '4px 8px', backgroundColor: '#dcfce7', borderRadius: '4px' }}>
-                          Journey Time: {(() => {
-                            const firstStop = tr.stops[0];
-                            const lastStop = tr.stops[tr.stops.length - 1];
-                            const diffMins = Math.round((lastStop.arrTime - firstStop.depTime) * 60);
-                            const h = Math.floor(diffMins / 60);
-                            const m = diffMins % 60;
-                            return `${h}h ${m}m`;
-                          })()}
-                        </span>
+                        <>
+                          <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 'bold', padding: '4px 8px', backgroundColor: '#dcfce7', borderRadius: '4px' }}>
+                            Journey Time: {(() => {
+                              const firstStop = tr.stops[0];
+                              const lastStop = tr.stops[tr.stops.length - 1];
+                              const diffMins = Math.round((lastStop.arrTime - firstStop.depTime) * 60);
+                              const h = Math.floor(diffMins / 60);
+                              const m = diffMins % 60;
+                              return `${h}h ${m}m`;
+                            })()}
+                          </span>
+                          <span style={{ fontSize: '13px', color: '#b91c1c', fontWeight: 'bold', padding: '4px 8px', backgroundColor: '#fee2e2', borderRadius: '4px', marginLeft: '8px' }}>
+                            Total Detention: {tr.totalDetention || 0} mins ({tr.detentionCount || 0} detentions)
+                          </span>
+                        </>
                       )}
                       {tr.isSimulated && setSimulatedPaths && (
                         <button
