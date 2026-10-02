@@ -1761,7 +1761,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', width: '850px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
-              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Goods Speed Configuration</h3>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Goods Runtime(BRT)</h3>
               <button
                 type="button"
                 onClick={() => setShowGoodsConfigModal(false)}
@@ -1864,7 +1864,7 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10001 }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', width: '600px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', overflow: 'hidden' }}>
             <div style={{ padding: '20px 24px 16px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
-              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Coaching Speed Configuration</h3>
+              <h3 style={{ margin: 0, color: '#1e293b', fontSize: '18px', fontWeight: 'bold' }}>Coaching Runtime(BRT)</h3>
               <button
                 type="button"
                 onClick={() => setShowCoachingConfigModal(false)}
@@ -1881,10 +1881,10 @@ export default function TimeDistanceGraph({ layout, scheduleData, routeInfo = []
                     <th colSpan="2" style={{ padding: '8px', borderBottom: '1px solid #cbd5e1', color: '#1e293b' }}>{`${(graphData?.layoutStations?.[graphData.layoutStations.length - 1]?.name || layout?.sequence?.filter(n => n.type === 'station').pop()?.name || 'END').toUpperCase()} → ${(graphData?.layoutStations?.[0]?.name || layout?.sequence?.find(n => n.type === 'station')?.name || 'START').toUpperCase()}`}</th>
                   </tr>
                   <tr>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>RUNTIME</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>STATIONS</th>
-                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>SPEED</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Block Sections</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', borderRight: '2px solid #cbd5e1', color: '#475569' }}>BRT(mm:ss)</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>Block Sections</th>
+                    <th style={{ padding: '8px', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>BRT(mm:ss)</th>
                   </tr>
                 </thead>
                 <tbody>
